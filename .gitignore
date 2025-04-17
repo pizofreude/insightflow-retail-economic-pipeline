@@ -177,4 +177,32 @@ cython_debug/
 .vscode/
 
 # IaC - Terraform
-terraform/
+## Local Terraform directories
+.terraform/
+.terraform.lock.hcl
+
+## Terraform state files
+*.tfstate
+*.tfstate.backup
+
+## Crash logs
+crash.log
+
+## Override files (used for local configurations)
+*.tfvars
+*.tfvars.json
+
+## Sensitive files
+*.auto.tfvars
+*.auto.tfvars.json
+
+## Plan output files
+*.tfplan
+
+## Ignore editor or system-specific files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.tmp
+
