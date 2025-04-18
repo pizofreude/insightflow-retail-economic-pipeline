@@ -206,3 +206,5 @@ Thumbs.db
 *.bak
 *.tmp
 
+# Sample data
+sample_data
