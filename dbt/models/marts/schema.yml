@@ -1,0 +1,71 @@
+# dbt/models/marts/schema.yml
+version: 2
+
+models:
+  - name: dim_date
+    description: "Date dimension table containing date attributes."
+    columns:
+      - name: date_key
+        description: "Surrogate key for the date dimension (YYYYMMDD)."
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "Full date value."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_msic_group
+    description: "Dimension table for 3-digit MSIC retail groups."
+    columns:
+      - name: msic_group_key
+        description: "Surrogate key for the MSIC group dimension."
+        tests:
+          - unique
+          - not_null
+      - name: msic_group_code
+        description: "Natural key (3-digit code) for the MSIC group."
+        tests:
+          - unique # Assuming codes are unique in the filtered staging model
+          - not_null
+
+  - name: fct_retail_sales_monthly
+    description: "Monthly fact table combining retail sales data and average fuel prices."
+    columns:
+      - name: date_key
+        description: "Foreign key to the date dimension."
+        tests:
+          - not_null
+          # Test relationship to dim_date
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: msic_group_key
+        description: "Foreign key to the MSIC group dimension."
+        tests:
+          - not_null
+          # Test relationship to dim_msic_group
+          - relationships:
+              to: ref('dim_msic_group')
+              field: msic_group_key
+      - name: sales_value_rm_mil
+        description: "Monthly sales value in RM millions."
+        tests:
+          - not_null:
+              config:
+                severity: warn # Example: Warn instead of error if null
+          - dbt_utils.expression_is_true: # Example custom test (requires dbt_utils)
+              expression: ">= 0" # Sales should not be negative
+      - name: volume_index
+        description: "Monthly volume index."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: avg_ron95_price_rm
+        description: "Average monthly RON95 price."
+        # Add tests if needed, e.g., check for reasonable price range
+
