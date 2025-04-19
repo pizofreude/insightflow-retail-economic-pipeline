@@ -208,3 +208,28 @@ Thumbs.db
 
 # Sample data
 sample_data
+
+# dbt projects
+
+# Compiled artifacts, logs, and target directory
+**/target/
+**/logs/
+
+# Downloaded dbt packages (should be installed via dbt deps)
+**/dbt_packages/
+
+# IMPORTANT: Ignore profiles.yml if kept within the project directory
+# Standard practice is to keep profiles.yml in ~/.dbt/
+# If you MUST keep it in the dbt/ directory, UNCOMMENT the line below
+# dbt/profiles.yml
+
+# Ignore Python virtual environment if created within dbt folder (though usually at root)
+# dbt/venv/
+# dbt/.venv/
+
+# Ignore dbt cache files if applicable (less common now)
+# .dbt_cache/
+
+# OS-specific files (often good to have in general)
+.DS_Store
+Thumbs.db
