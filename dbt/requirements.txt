@@ -1,0 +1,9 @@
+# dbt/requirements.txt
+# Dependencies for running dbt locally with Athena
+
+dbt-core
+dbt-athena-adapter
+
+# Best practice is to pin versions, e.g.:
+# dbt-core~=1.7.0
+# dbt-athena-adapter~=1.7.0
