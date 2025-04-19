@@ -26,3 +26,8 @@ output "glue_database_name" {
   description = "Name of the Glue Catalog Database created for dbt."
   value       = aws_glue_catalog_database.dbt_database.name
 }
+
+output "glue_crawler_name" {
+  description = "Name of the Glue Crawler created."
+  value       = aws_glue_crawler.raw_data_crawler.name
+}

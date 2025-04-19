@@ -42,6 +42,11 @@ locals {
   # --- NEW Local for Glue DB ---
   glue_database_name        = "${var.project_name}_${var.env}" # e.g., insightflow_dev
   # --- End NEW Local for Glue DB ---
+    # --- NEW Locals for Glue Crawler ---
+  glue_crawler_role_name    = "${local.resource_prefix}-glue-crawler-role"
+  glue_crawler_policy_name  = "${local.resource_prefix}-glue-crawler-s3-policy"
+  glue_crawler_name         = "${local.resource_prefix}-raw-data-crawler"
+  # --- End NEW Locals for Glue Crawler ---
 }
 
 
@@ -121,7 +126,65 @@ resource "aws_iam_role_policy_attachment" "batch_service_policy_attach" {
   # This managed policy grants Batch permissions to manage resources like ECS, EC2 (if used), etc.
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
-# --- End NEW IAM Resources ---
+# --- End NEW IAM Resources for Batch Service ---
+# --- NEW Glue Crawler Role & Policy ---
+resource "aws_iam_role" "glue_crawler_role" {
+  name = local.glue_crawler_role_name
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      { Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "glue.amazonaws.com" } }
+    ]
+  })
+  tags = local.common_tags
+}
+
+# Attach the AWS managed Glue Service Role policy
+resource "aws_iam_role_policy_attachment" "glue_service_policy_attach" {
+  role       = aws_iam_role.glue_crawler_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+# Custom policy to allow Glue Crawler read access to the raw S3 bucket
+resource "aws_iam_policy" "glue_s3_read_policy" {
+  name        = local.glue_crawler_policy_name
+  description = "Allows Glue crawler to read raw data S3 bucket"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Effect   = "Allow"
+        Resource = [
+          data.terraform_remote_state.storage.outputs.raw_s3_bucket_arn,
+          "${data.terraform_remote_state.storage.outputs.raw_s3_bucket_arn}/raw/*" # Grant access specifically to the /raw prefix and its contents
+        ]
+      },
+      # Allow listing the bucket itself (needed for crawler to find paths)
+      {
+         Action = ["s3:ListBucket"]
+         Effect = "Allow"
+         Resource = [data.terraform_remote_state.storage.outputs.raw_s3_bucket_arn]
+         Condition = {
+             StringLike = {
+                 "s3:prefix": ["raw/*"] # Restrict listing to the /raw prefix
+             }
+         }
+      }
+    ]
+  })
+  tags = local.common_tags
+}
+
+# Attach the custom S3 read policy to the Glue Crawler role
+resource "aws_iam_role_policy_attachment" "glue_s3_read_policy_attach" {
+  role       = aws_iam_role.glue_crawler_role.name
+  policy_arn = aws_iam_policy.glue_s3_read_policy.arn
+}
+# --- End NEW Glue Crawler Role & Policy ---
 
 # -----------------------------------------------------
 # AWS Batch Resources (NEW - in batch.tf or main.tf)
@@ -170,13 +233,10 @@ resource "aws_batch_job_definition" "ingestion_job_def" {
 
   container_properties = jsonencode({
     image = var.batch_container_image # Use variable for image URI (REPLACE LATER)
-    command = ["echo", "Replace with actual command, e.g., python script.py"] # Placeholder command
+    command = ["python", "main.py"]
     jobRoleArn = aws_iam_role.batch_execution_role.arn # Role for the container application
     executionRoleArn = aws_iam_role.batch_execution_role.arn # Role for ECS agent to manage container (logging, ECR pull)
-    environment = [ # Example environment variables - add secrets/config here later
-      { name = "DATA_SOURCE_URL_1", value = "http://example.com/data1" },
-      { name = "TARGET_BUCKET", value = data.terraform_remote_state.storage.outputs.raw_s3_bucket_name }
-    ]
+    environment = [] # Pass TARGET_BUCKET during job submission overrides
     networkConfiguration = {
       assignPublicIp = "ENABLED" # Enable if container needs outbound internet access (e.g., to download data)
     }
@@ -217,3 +277,35 @@ resource "aws_glue_catalog_database" "dbt_database" {
   tags = local.common_tags
 }
 # --- End NEW Glue Resources ---
+# --- NEW Glue Crawler Resource ---
+resource "aws_glue_crawler" "raw_data_crawler" {
+  name          = local.glue_crawler_name
+  role          = aws_iam_role.glue_crawler_role.arn
+  database_name = aws_glue_catalog_database.dbt_database.name
+
+  s3_target {
+    path = "s3://${data.terraform_remote_state.storage.outputs.raw_s3_bucket_name}/raw/" # Path to the parent raw data folder
+    # exclusions = [] # Optional: exclude files/patterns if needed
+  }
+
+  schema_change_policy {
+    update_behavior = "UPDATE_IN_DATABASE" # Update table schema if changes detected
+    delete_behavior = "LOG" # Log objects that are deleted, don't delete tables
+  }
+
+  configuration = jsonencode({
+    "Version": 1.0,
+    "CrawlerOutput": {
+      "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" } # Automatically update partitions
+    },
+    "Grouping": {
+      "TableGroupingPolicy": "CombineCompatibleSchemas" # Try to combine schemas if similar (usually not needed with distinct dataset folders)
+    }
+  })
+
+  # No schedule defined means it runs on demand
+  # schedule = "cron(0 1 * * ? *)" # Example: Run daily at 1 AM UTC
+
+  tags = local.common_tags
+}
+# --- End NEW Glue Crawler Resource ---

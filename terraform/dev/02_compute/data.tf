@@ -6,7 +6,7 @@ data "terraform_remote_state" "storage" {
   config = {
     bucket = "insightflow-terraform-state-bucket" # REPLACE with your state bucket
     key    = "env:/dev/dev/storage.tfstate"       # Key for the storage layer state
-    region = var.aws_region
+    region = "ap-southeast-2"                     # Must matched backend region
   }
 }
 
