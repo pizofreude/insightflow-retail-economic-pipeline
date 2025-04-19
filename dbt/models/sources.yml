@@ -1,0 +1,56 @@
+# dbt/models/sources.yml
+version: 2
+
+sources:
+  - name: landing_zone # Arbitrary name for the source group (e.g., raw S3 data)
+    # database: insightflow_dev # Optional: Specify if different from target database in profiles.yml
+    schema: insightflow_dev # REQUIRED: Specify the Glue DB name where crawler creates tables
+    description: "Raw data loaded from data.gov.my sources via AWS Batch ingestion."
+    tables:
+      - name: iowrt # Corresponds to the table created by Glue Crawler for iowrt data
+        description: "Raw Headline Wholesale & Retail Trade data (monthly)."
+        columns:
+          - name: series # Original column names from source Parquet/JSON
+            description: "Series type ('abs', 'growth_yoy', 'growth_mom')"
+          - name: date
+            description: "Date of record (YYYY-MM-DD, monthly frequency)"
+          - name: sales
+            description: "Sales Value (RM mil)"
+          - name: volume
+            description: "Volume Index (base 2015 = 100)"
+          - name: volume_sa
+            description: "Seasonally Adjusted Volume Index (base 2015 = 100)"
+          # Add tests if desired, e.g.:
+          # tests:
+          #   - not_null
+
+      - name: iowrt_3d # Corresponds to the table created by Glue Crawler for iowrt_3d data
+        description: "Raw Detailed Wholesale & Retail Trade by Group (3-digit) data (monthly)."
+        columns:
+          - name: series
+            description: "Series type ('abs', 'growth_yoy', 'growth_mom')"
+          - name: date
+            description: "Date of record (YYYY-MM-DD, monthly frequency)"
+          - name: group # Note: This is the 3-digit MSIC code
+            description: "MSIC Group Code (3-digit)"
+          - name: sales
+            description: "Sales Value (RM mil)"
+          - name: volume
+            description: "Volume Index (base 2015 = 100)"
+
+      - name: fuelprice # Corresponds to the table created by Glue Crawler for fuelprice data
+        description: "Raw weekly fuel price data."
+        columns:
+          - name: series_type
+            description: "Chart Type ('level', 'change_weekly')"
+          - name: date
+            description: "Date of effect (YYYY-MM-DD, weekly frequency)"
+          - name: ron95
+            description: "RON95 Price (RM/litre)"
+          - name: ron97
+            description: "RON97 Price (RM/litre)"
+          - name: diesel
+            description: "Diesel Price (Peninsular) (RM/litre)"
+          - name: diesel_eastmsia
+            description: "Diesel Price (East Malaysia) (RM/litre)"
+
