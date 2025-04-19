@@ -1,0 +1,66 @@
+# dbt_project.yml
+
+# Project name - should match your directory name ideally
+name: 'insightflow'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+# Profiles are defined in profiles.yml (usually in ~/.dbt/)
+profile: 'insightflow_dbt'
+
+# These configurations specify where dbt should look for different types of files.
+# Relative paths are interpreted relative to the dbt_project.yml file.
+model-paths: ["models"]           # Path to models (.sql, .py files)
+analysis-paths: ["analysis"]      # Path to analyses (.sql files)
+test-paths: ["tests"]             # Path to tests (.sql, .yml files)
+seed-paths: ["seeds"]             # Path to seed files (.csv files)
+macro-paths: ["macros"]           # Path to macros (.sql files)
+snapshot-paths: ["snapshots"]     # Path to snapshots (.sql files)
+
+# Directory where compiled SQL and run artifacts are written
+target-path: "target"
+# Directories removed by `dbt clean`
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+
+# Configuring models
+# These settings can be overridden in specific models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+models:
+  insightflow: # Project name - applies config to models in this project
+    # Config indicated by + and applies to all files under models/
+    +materialized: view # Default materialization for all models is 'view'
+
+    staging: # Config specific to models/staging/ directory
+      +materialized: view # Staging models will be views
+      +schema: staging # Optional: create staging models in a 'staging' schema/prefix
+      # Add tags or other specific configs for staging models if needed
+
+    marts: # Config specific to models/marts/ directory
+      +materialized: table # Mart models will be tables
+      +schema: marts # Optional: create mart models in a 'marts' schema/prefix
+      # --- Athena Specific Configuration for Partitioning ---
+      # Apply partitioning specifically to the fact table (assuming it's named fct_retail_sales_monthly.sql)
+      fct_retail_sales_monthly:
+        +materialized: table
+        +partitions: # Define partitioning columns for Athena
+          - year
+          - month
+        # Optional: Add bucketing/clustering if needed, though partitioning is primary for Athena
+        # +clustered_by: ["msic_group_key"]
+        # +buckets: 16 # Example bucket count
+
+# Configuring seeds
+# Full documentation: https://docs.getdbt.com/docs/building-a-dbt-project/seeds
+seeds:
+  insightflow: # Project name
+    msic_lookup: # Specific seed file name (msic_lookup.csv)
+      +schema: raw_seeds # Optional: Load seeds into a specific schema
+      +column_types: # Optional: Define column types explicitly if needed
+          group_code: varchar
+          desc_en: varchar
+          desc_bm: varchar
+          # Add other columns if present in your CSV and you want to type them
