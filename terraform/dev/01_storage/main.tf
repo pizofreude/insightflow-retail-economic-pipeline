@@ -8,6 +8,14 @@ terraform {
     }
   }
   required_version = ">= 1.0"
+
+  backend "s3" {
+    bucket         = "insightflow-terraform-state-bucket" # Bucket must exist
+    key            = "env:/dev/dev/storage.tfstate"                # Unique key for this state
+    region         = "ap-southeast-2"                     # Your chosen region
+    dynamodb_table = "terraform-state-lock-dynamo"        # DynamoDB table must exist
+    encrypt        = true
+  }
 }
 
 provider "aws" {
