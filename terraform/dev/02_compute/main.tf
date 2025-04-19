@@ -39,6 +39,9 @@ locals {
   batch_job_queue_name     = "${local.resource_prefix}-job-queue"
   batch_job_definition_name = "${local.resource_prefix}-ingestion-job-def"
   # --- End NEW Locals for Batch ---
+  # --- NEW Local for Glue DB ---
+  glue_database_name        = "${var.project_name}_${var.env}" # e.g., insightflow_dev
+  # --- End NEW Local for Glue DB ---
 }
 
 
@@ -201,3 +204,16 @@ resource "aws_batch_job_definition" "ingestion_job_def" {
   tags = local.common_tags
 }
 # --- End NEW Batch Resources ---
+
+# -----------------------------------------------------
+# AWS Glue Resources (NEW - in glue.tf or main.tf)
+# -----------------------------------------------------
+
+resource "aws_glue_catalog_database" "dbt_database" {
+  name = local.glue_database_name # e.g., insightflow_dev
+  # description = "Glue database for ${var.env} environment managed by dbt." # Optional description
+  # location_uri = "s3://${data.terraform_remote_state.storage.outputs.processed_s3_bucket_name}/${local.glue_database_name}/" # Optional: Define default location
+
+  tags = local.common_tags
+}
+# --- End NEW Glue Resources ---
