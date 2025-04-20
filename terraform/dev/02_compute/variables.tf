@@ -49,3 +49,29 @@ variable "batch_memory_mib" {
   default     = 2048 # 2 GiB
 }
 # --- End NEW Variables for Batch ---
+# --- NEW Variables for Kestra EC2 ---
+variable "kestra_instance_type" {
+  description = "EC2 instance type for Kestra server."
+  type        = string
+  default     = "t3.small" # Choose based on expected load/budget
+}
+
+variable "kestra_key_name" {
+  description = "Name of the EC2 Key Pair to allow SSH access (must exist in the region)."
+  type        = string
+  # default     = "your-key-pair-name" # Provide a default or set in tfvars if SSH needed
+  # If you don't need SSH access after initial setup, you can omit this and the SSH rule in the security group.
+}
+
+variable "kestra_allowed_cidr_blocks" {
+  description = "List of CIDR blocks allowed to access Kestra UI (port 8080). Use ['0.0.0.0/0'] for public access (less secure)."
+  type        = list(string)
+  default     = ["0.0.0.0/0"] # WARNING: Allows access from any IP. Restrict this in production.
+}
+
+variable "kestra_ssh_allowed_cidr_blocks" {
+  description = "List of CIDR blocks allowed SSH access (port 22). Restrict to your IP."
+  type        = list(string)
+  default     = ["0.0.0.0/0"] # WARNING: Allows SSH from any IP. Restrict this to your IP address (e.g., ["YOUR_IP/32"]).
+}
+# --- End Variables for Kestra EC2 ---
