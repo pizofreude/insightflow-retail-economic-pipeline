@@ -28,9 +28,10 @@ tasks:
 
       # Submit job and capture output (contains jobId)
       # Note the JSON structure for containerOverrides. Environment values must be strings.
+      JOB_NAME="insightflow-ingestion-{{execution.id}}"
       JOB_OUTPUT=$(aws batch submit-job \
         --region "$AWS_REGION" \
-        --job-name "insightflow-ingestion-\{\{ execution.id \}\}" \
+        --job-name "$JOB_NAME" \
         --job-queue "$JOB_QUEUE_NAME" \
         --job-definition "$JOB_DEF_NAME" \
         --container-overrides '{
@@ -39,8 +40,8 @@ tasks:
             ]
           }')
 
-      # Extract Job ID (optional, but useful for waiting/checking status)
-      JOB_ID=$(echo "$JOB_OUTPUT" | jq -r .jobId)
+      # Extract Job ID (using grep and awk instead of jq)
+      JOB_ID=$(echo "$JOB_OUTPUT" | grep -o '"jobId": "[^"]*' | awk -F'"' '{print $4}')
       echo "Submitted Job ID: $JOB_ID"
       # Output the Job ID for potential use in later tasks
       echo '\{\{ outputs({"jobId": "'"$JOB_ID"'"}) \}\}'
@@ -58,10 +59,10 @@ tasks:
   commands:
     - |
       echo "Starting AWS Glue Crawler..."
-      CRAWLER_NAME="insightflow-dev-raw-data-crawler" # Or use TF output: {{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}
+      CRAWLER_NAME="insightflow-dev-raw-data-crawler"
       AWS_REGION="ap-southeast-2" # Or use flow input
 
-      aws glue start-crawler-run --region $AWS_REGION --name "$CRAWLER_NAME"
+      aws glue start-crawler --region $AWS_REGION --name "$CRAWLER_NAME"
       echo "Crawler $CRAWLER_NAME started."
 
   # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
@@ -113,14 +114,4 @@ triggers:
   - id: daily_schedule
     type: io.kestra.plugin.core.trigger.Schedule
     cron: "0 5 * * *" # Example: Run daily at 5 AM UTC
-
-# Optional: Add error handling tasks
-# errors:
-#   - id: send_failure_notification
-#     type: io.kestra.plugin.notifications.slack.SlackExecution # Example
-#     url: "{{ secret('SLACK_WEBHOOK_URL') }}"
-#     payload: |
-#       {
-#         "text": "Kestra Flow Failed!\n*Flow:* {{ flow.namespace }}.{{ flow.id }}\n*Execution:* {{ execution.id }}\n*Link:* {{ KESTRA_UI_URL }}/ui/executions/{{ execution.id }}"
-#       }
 
