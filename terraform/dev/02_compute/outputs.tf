@@ -31,3 +31,15 @@ output "glue_crawler_name" {
   description = "Name of the Glue Crawler created."
   value       = aws_glue_crawler.raw_data_crawler.name
 }
+
+output "kestra_ui_url" {
+  description = "URL to access the Kestra UI. Use http://<IP_ADDRESS>:8080"
+  value       = "http://${aws_eip.kestra_eip.public_ip}:8080" # Use Elastic IP if created
+  # value       = "http://${aws_instance.kestra_server.public_ip}:8080" # Use instance public IP if no EIP
+}
+
+output "kestra_server_ssh_command" {
+  description = "Command to SSH into the Kestra server (replace key path)."
+  value       = "ssh -i /path/to/${var.kestra_key_name}.pem ec2-user@${aws_eip.kestra_eip.public_ip}" # Use Elastic IP if created
+  # value       = "ssh -i /path/to/${var.kestra_key_name}.pem ec2-user@${aws_instance.kestra_server.public_ip}" # Use instance public IP if no EIP
+}
