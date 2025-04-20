@@ -63,6 +63,10 @@ resource "aws_instance" "kestra_server" {
               chmod +x /home/ec2-user/.docker/cli-plugins/docker-compose
               chown ec2-user:ec2-user /home/ec2-user/.docker/cli-plugins/docker-compose
 
+              # Fix permissions for .docker directory
+              sudo chown -R ec2-user:ec2-user /home/ec2-user/.docker
+              chmod -R 700 /home/ec2-user/.docker
+
               # Create Kestra directory and Docker Compose configuration
               mkdir -p /home/ec2-user/kestra
               chown -R ec2-user:ec2-user /home/ec2-user/kestra
