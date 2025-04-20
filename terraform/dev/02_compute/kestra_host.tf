@@ -91,30 +91,21 @@ services:
       - postgres
     ports:
       - "8080:8080" # Kestra UI port
+    # --- ADDED command to start server ---
+    command: server local # Explicitly tell Kestra container to start server components
+    # ------------------------------------
     environment:
-      KESTRA_CONFIGURATION: |
-        kestra:
-          repository:
-            type: postgres
-          queue:
-            type: postgres
-          storage:
-            type: s3 # Use S3 for internal storage (logs, etc.) - Requires S3 permissions on EC2 role
-            bucket: ${data.terraform_remote_state.storage.outputs.processed_s3_bucket_name} # Use processed bucket
-            region: ${var.aws_region}
-        datasources:
-          postgres:
-            url: jdbc:postgresql://postgres:5432/kestra_db
-            driverClassName: org.postgresql.Driver
-            username: kestra
-            password: kestra_password # Must match POSTGRES_PASSWORD
-            hikari:
-                maximumPoolSize: 10
-                minimumIdle: 2
-                idleTimeout: 30000 # 30 seconds
-                connectionTimeout: 10000 # 10 seconds
-                leakDetectionThreshold: 15000 # 15 seconds
-                maxLifetime: 600000 # 10 minutes
+      # --- Use specific environment variables for Kestra config ---
+      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_URL: jdbc:postgresql://postgres:5432/kestra_db
+      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_USERNAME: kestra
+      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_PASSWORD: kestra_password # Match POSTGRES_PASSWORD
+      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_DRIVERCLASSNAME: org.postgresql.Driver
+      KESTRA_CONFIGURATION_REPOSITORY_TYPE: postgres
+      KESTRA_CONFIGURATION_QUEUE_TYPE: postgres
+      KESTRA_CONFIGURATION_STORAGE_TYPE: s3
+      KESTRA_CONFIGURATION_STORAGE_S3_BUCKET: ${data.terraform_remote_state.storage.outputs.processed_s3_bucket_name} # Terraform interpolated
+      KESTRA_CONFIGURATION_STORAGE_S3_REGION: ${var.aws_region} # Terraform interpolated
+      # --- Removed multi-line KESTRA_CONFIGURATION block ---
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # If using Docker runner for tasks
 
