@@ -70,55 +70,50 @@ tasks:
 
 # --- Optional Delay ---
 - id: wait_for_crawler_and_batch
-  type: io.kestra.core.tasks.flows.Pause
+  type: io.kestra.plugin.core.flow.Pause
   delay: PT3M # Example: Pause for 3 minutes to give Batch/Crawler time
 
 
 # -------------------------------------
 # 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
 # -------------------------------------
-# Assumes Kestra executor has access to the dbt project files (e.g., via Git sync task)
-# and dbt CLI + adapter installed.
 - id: dbt_setup_and_run
-  type: io.kestra.core.tasks.flows.WorkingDirectory # Group dbt tasks in their project dir
+  type: io.kestra.plugin.core.flow.WorkingDirectory
   tasks:
-    - id: git_clone_dbt_project # Example: Clone dbt repo if not already present
+    - id: git_clone_dbt_project # Clone the dbt repository
       type: io.kestra.plugin.git.Clone
-      url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git # e.g., git@github.com:user/repo.git
-      branch: develop # Checkout the dev branch for the dev pipeline
-      # Add credentials if needed
+      url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
+      branch: develop
 
     - id: dbt_deps
       type: io.kestra.plugin.dbt.cli.DbtCLI
-      # runner: PROCESS # Or DOCKER if running dbt in its own container
       commands:
         - dbt deps
-      # Optional: Specify dbt project directory if not current dir
-      # projectDir: /path/to/dbt/project # Usually '.' if WorkingDirectory task is used
+      # Specify the dbt project directory relative to the cloned repository
+      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
 
     - id: dbt_seed
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
-        - dbt seed --target dev # Specify the dbt target
+        - dbt seed --target dev
+      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
 
     - id: dbt_run
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt run --target dev
+      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
 
     - id: dbt_test
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt test --target dev
-
-  # Define the working directory relative to Kestra's internal storage or execution root
-  # This path needs to contain the dbt project after the git clone step
-  workingDirectory: "{{ outputs.git_clone_dbt_project.outputFiles.workingDir }}/dbt" # Example path for dbt_project.yml in subdir dbt/
+      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
   - id: daily_schedule
-    type: io.kestra.core.models.triggers.types.Schedule
+    type: io.kestra.plugin.core.trigger.Schedule
     cron: "0 5 * * *" # Example: Run daily at 5 AM UTC
 
 # Optional: Add error handling tasks
