@@ -33,3 +33,21 @@ data "aws_security_group" "default" {
   name   = "default"
 }
 # --- End NEW Data Sources for Networking ---
+
+# --- NEW Data Source for Kestra AMI ---
+# Get latest Amazon Linux 2 AMI
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+# --- End NEW Data Source for Kestra AMI ---
