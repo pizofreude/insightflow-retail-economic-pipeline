@@ -79,35 +79,35 @@ tasks:
 - id: dbt_setup_and_run
   type: io.kestra.plugin.core.flow.WorkingDirectory
   tasks:
-    - id: git_clone_dbt_project # Clone the dbt repository
+    - id: git_clone_dbt_project
       type: io.kestra.plugin.git.Clone
       url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
       branch: develop
+      destination: "{{ workingDir }}/cloned_repo"
 
     - id: dbt_deps
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt deps
-      # Specify the dbt project directory relative to the cloned repository
-      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
+      projectDir: "{{ workingDir }}/cloned_repo/dbt"
 
     - id: dbt_seed
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt seed --target dev
-      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
+      projectDir: "{{ workingDir }}/cloned_repo/dbt"
 
     - id: dbt_run
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt run --target dev
-      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
+      projectDir: "{{ workingDir }}/cloned_repo/dbt"
 
     - id: dbt_test
       type: io.kestra.plugin.dbt.cli.DbtCLI
       commands:
         - dbt test --target dev
-      projectDir: "{{ outputs.git_clone_dbt_project.outputFiles }}/dbt"
+      projectDir: "{{ workingDir }}/cloned_repo/dbt"
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
