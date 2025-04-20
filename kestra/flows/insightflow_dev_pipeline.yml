@@ -17,8 +17,9 @@ tasks:
   # -------------------------------------
   - id: submit_batch_ingestion_job
     type: io.kestra.plugin.aws.batch.SubmitJob
-    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}" # Use Kestra secrets for AWS creds
-    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+    # No accessKeyId or secretKeyId needed - will use EC2 Instance Role to avoid using Kestra secrets which requires Enterprise edition
+    # accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}" # Use Kestra secrets for AWS creds
+    # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
     region: "ap-southeast-2" # Or use flow input: {{ inputs.aws_region }}
     jobName: "insightflow-ingestion-{{ execution.id }}" # Unique job name per run
     jobDefinition: "{{ tf(flow.namespace,'compute').outputs.batch_job_definition_arn }}" # Fetch ARN from Terraform output (requires Kestra Terraform integration or manual input)
@@ -39,8 +40,8 @@ tasks:
   # -------------------------------------
   - id: start_glue_crawler
     type: io.kestra.plugin.aws.glue.CrawlerStart
-    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
-    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+    # accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+    # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
     region: "ap-southeast-2"
     name: "{{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}" # Fetch from Terraform output
     # Or hardcode: "insightflow-dev-raw-data-crawler"
