@@ -17,22 +17,20 @@ tasks:
 # -------------------------------------
 - id: submit_batch_ingestion_job_cli
   type: io.kestra.core.tasks.scripts.Bash
-  # AWS CLI needs to be available in the execution environment (likely present in -full image)
-  # Authentication relies on the EC2 instance role
   commands:
     - |
       echo "Submitting AWS Batch Job..."
       # Fetch resource names/ARNs from Terraform outputs (replace placeholders)
-      JOB_DEF_NAME="insightflow-dev-ingestion-job-def" # Or use ARN: {{ tf(flow.namespace,'compute').outputs.batch_job_definition_arn }}
-      JOB_QUEUE_NAME="insightflow-dev-job-queue"       # Or use ARN: {{ tf(flow.namespace,'compute').outputs.batch_job_queue_arn }}
-      TARGET_BUCKET_NAME="insightflow-dev-raw-data" # Or use TF output: {{ tf(flow.namespace,'storage').outputs.raw_s3_bucket_name }}
-      AWS_REGION="ap-southeast-2" # Or use flow input: {{ inputs.aws_region }}
+      JOB_DEF_NAME="insightflow-dev-ingestion-job-def" # Or use ARN: \{\{ tf(flow.namespace,'compute').outputs.batch_job_definition_arn \}\}
+      JOB_QUEUE_NAME="insightflow-dev-job-queue"       # Or use ARN: \{\{ tf(flow.namespace,'compute').outputs.batch_job_queue_arn \}\}
+      TARGET_BUCKET_NAME="insightflow-dev-raw-data"    # Or use TF output: \{\{ tf(flow.namespace,'storage').outputs.raw_s3_bucket_name \}\}
+      AWS_REGION="ap-southeast-2"                      # Or use flow input: \{\{ inputs.aws_region \}\}
 
       # Submit job and capture output (contains jobId)
       # Note the JSON structure for containerOverrides. Environment values must be strings.
       JOB_OUTPUT=$(aws batch submit-job \
-        --region $AWS_REGION \
-        --job-name "insightflow-ingestion-{{ execution.id }}" \
+        --region "$AWS_REGION" \
+        --job-name "insightflow-ingestion-\{\{ execution.id \}\}" \
         --job-queue "$JOB_QUEUE_NAME" \
         --job-definition "$JOB_DEF_NAME" \
         --container-overrides '{
@@ -42,10 +40,10 @@ tasks:
           }')
 
       # Extract Job ID (optional, but useful for waiting/checking status)
-      JOB_ID=$(echo $JOB_OUTPUT | jq -r .jobId)
+      JOB_ID=$(echo "$JOB_OUTPUT" | jq -r .jobId)
       echo "Submitted Job ID: $JOB_ID"
       # Output the Job ID for potential use in later tasks
-      echo '{{ outputs({"jobId": "'"$JOB_ID"'"}) }}'
+      echo '\{\{ outputs({"jobId": "'"$JOB_ID"'"}) \}\}'
 
   # If you need to wait for the Batch job, you'd add a subsequent task
   # using Bash/AWS CLI to poll `aws batch describe-jobs --jobs $JOB_ID`
