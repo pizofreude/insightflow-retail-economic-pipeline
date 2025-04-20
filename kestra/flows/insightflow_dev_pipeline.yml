@@ -12,48 +12,67 @@ inputs:
     defaults: dev
 
 tasks:
-  # -------------------------------------
-  # 1. Ingestion via AWS Batch
-  # -------------------------------------
-  - id: submit_batch_ingestion_job
-    type: io.kestra.plugin.aws.batch.SubmitJob
-    # No accessKeyId or secretKeyId needed - will use EC2 Instance Role to avoid using Kestra secrets which requires Enterprise edition
-    # accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}" # Use Kestra secrets for AWS creds
-    # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
-    region: "ap-southeast-2" # Or use flow input: {{ inputs.aws_region }}
-    jobName: "insightflow-ingestion-{{ execution.id }}" # Unique job name per run
-    jobDefinition: "insightflow-dev-ingestion-job-def" # Or fetch ARN from Terraform output (requires Kestra Terraform integration or manual input)
-    # Or hardcode ARN: "arn:aws:batch:ap-southeast-2:ACCOUNT_ID:job-definition/insightflow-dev-ingestion-job-def"
-    jobQueue: "insightflow-dev-job-queue" # Or fetch ARN from Terraform output
-    # Or hardcode ARN: "arn:aws:batch:ap-southeast-2:ACCOUNT_ID:job-queue/insightflow-dev-job-queue"
-    containerOverrides:
-      environment:
-        # Pass the target bucket name to the Python script
-        - name: TARGET_BUCKET
-          value: "insightflow-dev-raw-data" # Or fetch from Terraform storage output
-          # Or hardcode: "insightflow-dev-raw-data"
-    # Optional: Specify if Kestra should wait for the job to complete
-    wait: true # Default is true, wait for job completion
+# -------------------------------------
+# 1. Ingestion via AWS Batch (using AWS CLI)
+# -------------------------------------
+- id: submit_batch_ingestion_job_cli
+  type: io.kestra.core.tasks.scripts.Bash
+  # AWS CLI needs to be available in the execution environment (likely present in -full image)
+  # Authentication relies on the EC2 instance role
+  commands:
+    - |
+      echo "Submitting AWS Batch Job..."
+      # Fetch resource names/ARNs from Terraform outputs (replace placeholders)
+      JOB_DEF_NAME="insightflow-dev-ingestion-job-def" # Or use ARN: {{ tf(flow.namespace,'compute').outputs.batch_job_definition_arn }}
+      JOB_QUEUE_NAME="insightflow-dev-job-queue"       # Or use ARN: {{ tf(flow.namespace,'compute').outputs.batch_job_queue_arn }}
+      TARGET_BUCKET_NAME="insightflow-dev-raw-data" # Or use TF output: {{ tf(flow.namespace,'storage').outputs.raw_s3_bucket_name }}
+      AWS_REGION="ap-southeast-2" # Or use flow input: {{ inputs.aws_region }}
+
+      # Submit job and capture output (contains jobId)
+      # Note the JSON structure for containerOverrides. Environment values must be strings.
+      JOB_OUTPUT=$(aws batch submit-job \
+        --region $AWS_REGION \
+        --job-name "insightflow-ingestion-{{ execution.id }}" \
+        --job-queue "$JOB_QUEUE_NAME" \
+        --job-definition "$JOB_DEF_NAME" \
+        --container-overrides '{
+            "environment": [
+              {"name": "TARGET_BUCKET", "value": "'"$TARGET_BUCKET_NAME"'"}
+            ]
+          }')
+
+      # Extract Job ID (optional, but useful for waiting/checking status)
+      JOB_ID=$(echo $JOB_OUTPUT | jq -r .jobId)
+      echo "Submitted Job ID: $JOB_ID"
+      # Output the Job ID for potential use in later tasks
+      echo '{{ outputs({"jobId": "'"$JOB_ID"'"}) }}'
+
+  # If you need to wait for the Batch job, you'd add a subsequent task
+  # using Bash/AWS CLI to poll `aws batch describe-jobs --jobs $JOB_ID`
+  # until status is SUCCEEDED or FAILED. This adds complexity.
+  # For now, we'll assume it runs reasonably fast or subsequent tasks handle delays.
 
   # -------------------------------------
-  # 2. Update Glue Catalog via Crawler
+  # 2. Update Glue Catalog via Crawler (using AWS CLI)
   # -------------------------------------
-  - id: start_glue_crawler
-    type: io.kestra.plugin.aws.glue.CrawlerStart
-    # accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
-    # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
-    region: "ap-southeast-2"
-    name: "insightflow-dev-raw-data-crawler" # Or fetch from Terraform output
-    # Or hardcode: "insightflow-dev-raw-data-crawler"
-    # This task only starts the crawler, it doesn't wait by default.
-    # We might need a separate task to check crawler status if dbt depends on immediate completion.
-    # Or add a delay task, or assume crawler runs fast enough / dbt handles eventual consistency.
+  - id: start_glue_crawler_cli
+    type: io.kestra.core.tasks.scripts.Bash
+    commands:
+      - |
+        echo "Starting AWS Glue Crawler..."
+        CRAWLER_NAME="insightflow-dev-raw-data-crawler" # Or use TF output: {{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}
+        AWS_REGION="ap-southeast-2" # Or use flow input
 
-  # --- Optional Delay or Wait Task ---
-  # Add a delay if needed to allow crawler time to finish before dbt runs
-  - id: wait_for_crawler
+        aws glue start-crawler-run --region $AWS_REGION --name "$CRAWLER_NAME"
+        echo "Crawler $CRAWLER_NAME started."
+
+    # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
+
+  # --- Optional Delay ---
+  - id: wait_for_crawler_and_batch
     type: io.kestra.core.tasks.flows.Pause
-    delay: PT2M # Example: Pause for 2 minutes
+    delay: PT3M # Example: Pause for 3 minutes to give Batch/Crawler time
+
 
   # -------------------------------------
   # 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
