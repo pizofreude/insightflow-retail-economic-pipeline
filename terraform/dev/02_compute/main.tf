@@ -17,7 +17,6 @@ terraform {
     encrypt        = true
   }
 
-
 }
 
 provider "aws" {
@@ -47,6 +46,13 @@ locals {
   glue_crawler_policy_name  = "${local.resource_prefix}-glue-crawler-s3-policy"
   glue_crawler_name         = "${local.resource_prefix}-raw-data-crawler"
   # --- End NEW Locals for Glue Crawler ---
+  # --- NEW Locals for Kestra Host ---
+  kestra_ec2_role_name      = "${local.resource_prefix}-kestra-ec2-role"
+  kestra_ec2_profile_name   = "${local.resource_prefix}-kestra-ec2-profile"
+  kestra_ec2_sg_name        = "${local.resource_prefix}-kestra-sg"
+  kestra_ec2_instance_name  = "${local.resource_prefix}-kestra-server"
+  kestra_ec2_eip_name       = "${local.resource_prefix}-kestra-eip"
+  # --- End NEW Locals for Kestra Host ---
 }
 
 
@@ -185,6 +191,44 @@ resource "aws_iam_role_policy_attachment" "glue_s3_read_policy_attach" {
   policy_arn = aws_iam_policy.glue_s3_read_policy.arn
 }
 # --- End NEW Glue Crawler Role & Policy ---
+
+# --- NEW IAM Role & Instance Profile for Kestra EC2 ---
+resource "aws_iam_role" "kestra_ec2_role" {
+  name = local.kestra_ec2_role_name
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      { Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" } }
+    ]
+  })
+  tags = local.common_tags
+}
+
+# Attach policies needed by Kestra tasks (AWS Plugins)
+# Granting broad access for portfolio simplicity - RESTRICT IN PRODUCTION
+resource "aws_iam_role_policy_attachment" "kestra_ec2_batch_access" {
+  role       = aws_iam_role.kestra_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSBatchFullAccess" # Allows submitting jobs, etc.
+}
+
+resource "aws_iam_role_policy_attachment" "kestra_ec2_glue_access" {
+  role       = aws_iam_role.kestra_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess" # Allows starting crawlers, etc.
+}
+
+resource "aws_iam_role_policy_attachment" "kestra_ec2_s3_access" {
+  role       = aws_iam_role.kestra_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess" # Needed if Kestra tasks interact directly with S3
+}
+
+# Add other permissions as needed (e.g., Secrets Manager read)
+
+resource "aws_iam_instance_profile" "kestra_ec2_profile" {
+  name = local.kestra_ec2_profile_name
+  role = aws_iam_role.kestra_ec2_role.name
+  tags = local.common_tags
+}
+# --- End NEW Kestra EC2 IAM ---
 
 # -----------------------------------------------------
 # AWS Batch Resources (NEW - in batch.tf or main.tf)
