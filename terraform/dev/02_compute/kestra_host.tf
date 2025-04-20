@@ -1,5 +1,5 @@
 # -----------------------------------------------------
-# Kestra Hosting Resources (NEW - in kestra_host.tf or main.tf)
+# Kestra Hosting Resources (UPDATED - in kestra_host.tf or main.tf)
 # -----------------------------------------------------
 
 # Security Group for Kestra EC2 instance
@@ -59,87 +59,92 @@ resource "aws_instance" "kestra_server" {
               # Install Docker Compose V2 (check for latest version)
               DOCKER_COMPOSE_VERSION=v2.24.6 # Specify desired version
               mkdir -p /home/ec2-user/.docker/cli-plugins/
-              # Install Docker Compose V2 (within user_data) - Note the $$
               curl -SL https://github.com/docker/compose/releases/download/$${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o /home/ec2-user/.docker/cli-plugins/docker-compose
               chmod +x /home/ec2-user/.docker/cli-plugins/docker-compose
-              chown ec2-user:ec2-user /home/ec2-user/.docker/cli-plugins/docker-compose # Set ownership
+              chown ec2-user:ec2-user /home/ec2-user/.docker/cli-plugins/docker-compose
 
-              # Create Kestra directory and docker-compose.yml
+              # Create Kestra directory and Docker Compose configuration
               mkdir -p /home/ec2-user/kestra
               chown -R ec2-user:ec2-user /home/ec2-user/kestra
               cat <<'EOT' > /home/ec2-user/kestra/docker-compose.yml
 version: '3.8'
 services:
   postgres:
-    image: postgres:15 # Use a specific Postgres version
+    image: postgres:15
     container_name: kestra_postgres
     restart: always
     environment:
       POSTGRES_USER: kestra
-      POSTGRES_PASSWORD: kestra_password # CHANGE THIS in a real setup
+      POSTGRES_PASSWORD: kestra_password
       POSTGRES_DB: kestra_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432" # Optional: Expose Postgres port if needed externally
+      - "5432:5432"
 
   kestra:
-    image: kestra/kestra:latest-full # Use image with common plugins included
+    build:
+      context: /home/ec2-user/kestra
+      dockerfile: Dockerfile
     container_name: kestra_server
     restart: always
     depends_on:
       - postgres
     ports:
-      - "8080:8080" # Kestra UI port
-    # --- ADDED command to start server ---
-    command: server local # Explicitly tell Kestra container to start server components
-    # ------------------------------------
+      - "8080:8080"
+    command: server local
     environment:
-      # --- Use specific environment variables for Kestra config ---
       KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_URL: jdbc:postgresql://postgres:5432/kestra_db
       KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_USERNAME: kestra
-      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_PASSWORD: kestra_password # Match POSTGRES_PASSWORD
+      KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_PASSWORD: kestra_password
       KESTRA_CONFIGURATION_DATASOURCES_POSTGRES_DRIVERCLASSNAME: org.postgresql.Driver
       KESTRA_CONFIGURATION_REPOSITORY_TYPE: postgres
       KESTRA_CONFIGURATION_QUEUE_TYPE: postgres
       KESTRA_CONFIGURATION_STORAGE_TYPE: s3
-      KESTRA_CONFIGURATION_STORAGE_S3_BUCKET: ${data.terraform_remote_state.storage.outputs.processed_s3_bucket_name} # Terraform interpolated
-      KESTRA_CONFIGURATION_STORAGE_S3_REGION: ${var.aws_region} # Terraform interpolated
-      # --- Removed multi-line KESTRA_CONFIGURATION block ---
+      KESTRA_CONFIGURATION_STORAGE_S3_BUCKET: ${data.terraform_remote_state.storage.outputs.processed_s3_bucket_name}
+      KESTRA_CONFIGURATION_STORAGE_S3_REGION: ${var.aws_region}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # If using Docker runner for tasks
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   postgres_data:
 
 EOT
 
-              # Set ownership for the compose file as well
-              chown ec2-user:ec2-user /home/ec2-user/kestra/docker-compose.yml
+              # Add Dockerfile to extend Kestra image
+              cat <<'EOT' > /home/ec2-user/kestra/Dockerfile
+FROM kestra/kestra:latest-full
 
-              # Run Docker Compose as ec2-user in the background
-              # Use sudo su to switch user and run docker-compose
-              sudo su - ec2-user -c "cd /home/ec2-user/kestra && docker compose up -d"
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
+
+# Verify installation
+RUN aws --version
+EOT
+
+              # Set ownership for the Dockerfile
+              chown ec2-user:ec2-user /home/ec2-user/kestra/Dockerfile
+
+              # Build and run Docker Compose
+              sudo su - ec2-user -c "cd /home/ec2-user/kestra && docker compose build && docker compose up -d"
 
               EOF
-
-  # Enable detailed monitoring if desired
-  # monitoring = true
 
   tags = merge(local.common_tags, {
     Name = local.kestra_ec2_instance_name
   })
 
-  # Ensure IAM profile is ready before instance creation
   depends_on = [aws_iam_instance_profile.kestra_ec2_profile]
 }
 
 # Optional: Allocate and associate an Elastic IP for a static address
 resource "aws_eip" "kestra_eip" {
   instance = aws_instance.kestra_server.id
-  domain   = "vpc" # Use domain = "vpc" instead of deprecated vpc = true
+  domain   = "vpc"
   tags = merge(local.common_tags, {
     Name = local.kestra_ec2_eip_name
   })
 }
-# --- End NEW Kestra Hosting Resources ---
