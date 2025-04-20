@@ -199,6 +199,22 @@ crash.log
 ## Plan output files
 *.tfplan
 
+## Kestra Hosting / Credentials
+
+## Ignore EC2 private key files (VERY IMPORTANT!)
+## Assuming you place the .pem file inside the credentials/ directory
+credentials/*.pem
+
+## Ignore all .pem files anywhere in the project (use with caution)
+## *.pem
+
+## Ignore Kestra log files if they were ever written locally (unlikely with current setup)
+**/logs/
+kestra/logs/
+
+## Ignore local Kestra configuration overrides if any (unlikely needed)
+## kestra/config/application.yml
+
 ## Ignore editor or system-specific files
 .DS_Store
 Thumbs.db
