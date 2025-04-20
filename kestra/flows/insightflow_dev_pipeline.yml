@@ -22,15 +22,15 @@ tasks:
     # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
     region: "ap-southeast-2" # Or use flow input: {{ inputs.aws_region }}
     jobName: "insightflow-ingestion-{{ execution.id }}" # Unique job name per run
-    jobDefinition: "{{ tf(flow.namespace,'compute').outputs.batch_job_definition_arn }}" # Fetch ARN from Terraform output (requires Kestra Terraform integration or manual input)
+    jobDefinition: "insightflow-dev-ingestion-job-def" # Or fetch ARN from Terraform output (requires Kestra Terraform integration or manual input)
     # Or hardcode ARN: "arn:aws:batch:ap-southeast-2:ACCOUNT_ID:job-definition/insightflow-dev-ingestion-job-def"
-    jobQueue: "{{ tf(flow.namespace,'compute').outputs.batch_job_queue_arn }}" # Fetch ARN from Terraform output
+    jobQueue: "insightflow-dev-job-queue" # Or fetch ARN from Terraform output
     # Or hardcode ARN: "arn:aws:batch:ap-southeast-2:ACCOUNT_ID:job-queue/insightflow-dev-job-queue"
     containerOverrides:
       environment:
         # Pass the target bucket name to the Python script
         - name: TARGET_BUCKET
-          value: "{{ tf(flow.namespace,'storage').outputs.raw_s3_bucket_name }}" # Fetch from Terraform storage output
+          value: "insightflow-dev-raw-data" # Or fetch from Terraform storage output
           # Or hardcode: "insightflow-dev-raw-data"
     # Optional: Specify if Kestra should wait for the job to complete
     wait: true # Default is true, wait for job completion
@@ -43,7 +43,7 @@ tasks:
     # accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
     # secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
     region: "ap-southeast-2"
-    name: "{{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}" # Fetch from Terraform output
+    name: "insightflow-dev-raw-data-crawler" # Or fetch from Terraform output
     # Or hardcode: "insightflow-dev-raw-data-crawler"
     # This task only starts the crawler, it doesn't wait by default.
     # We might need a separate task to check crawler status if dbt depends on immediate completion.
@@ -65,7 +65,7 @@ tasks:
     tasks:
       - id: git_clone_dbt_project # Example: Clone dbt repo if not already present
         type: io.kestra.plugin.git.Clone
-        url: <your-git-repo-url> # e.g., git@github.com:user/repo.git
+        url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git # e.g., git@github.com:user/repo.git
         branch: develop # Checkout the dev branch for the dev pipeline
         # Add credentials if needed
 
@@ -94,7 +94,7 @@ tasks:
 
     # Define the working directory relative to Kestra's internal storage or execution root
     # This path needs to contain the dbt project after the git clone step
-    workingDirectory: "{{ outputs.git_clone_dbt_project.outputFiles.workingDir }}/dbt" # Example path
+    workingDirectory: "{{ outputs.git_clone_dbt_project.outputFiles.workingDir }}/dbt" # Example path for dbt_project.yml in subdir dbt/
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
