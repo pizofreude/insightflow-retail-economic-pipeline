@@ -52,68 +52,68 @@ tasks:
   # until status is SUCCEEDED or FAILED. This adds complexity.
   # For now, we'll assume it runs reasonably fast or subsequent tasks handle delays.
 
-  # -------------------------------------
-  # 2. Update Glue Catalog via Crawler (using AWS CLI)
-  # -------------------------------------
-  - id: start_glue_crawler_cli
-    type: io.kestra.core.tasks.scripts.Bash
-    commands:
-      - |
-        echo "Starting AWS Glue Crawler..."
-        CRAWLER_NAME="insightflow-dev-raw-data-crawler" # Or use TF output: {{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}
-        AWS_REGION="ap-southeast-2" # Or use flow input
+# -------------------------------------
+# 2. Update Glue Catalog via Crawler (using AWS CLI)
+# -------------------------------------
+- id: start_glue_crawler_cli
+  type: io.kestra.core.tasks.scripts.Bash
+  commands:
+    - |
+      echo "Starting AWS Glue Crawler..."
+      CRAWLER_NAME="insightflow-dev-raw-data-crawler" # Or use TF output: {{ tf(flow.namespace,'compute').outputs.glue_crawler_name }}
+      AWS_REGION="ap-southeast-2" # Or use flow input
 
-        aws glue start-crawler-run --region $AWS_REGION --name "$CRAWLER_NAME"
-        echo "Crawler $CRAWLER_NAME started."
+      aws glue start-crawler-run --region $AWS_REGION --name "$CRAWLER_NAME"
+      echo "Crawler $CRAWLER_NAME started."
 
-    # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
+  # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
 
-  # --- Optional Delay ---
-  - id: wait_for_crawler_and_batch
-    type: io.kestra.core.tasks.flows.Pause
-    delay: PT3M # Example: Pause for 3 minutes to give Batch/Crawler time
+# --- Optional Delay ---
+- id: wait_for_crawler_and_batch
+  type: io.kestra.core.tasks.flows.Pause
+  delay: PT3M # Example: Pause for 3 minutes to give Batch/Crawler time
 
 
-  # -------------------------------------
-  # 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
-  # -------------------------------------
-  # Assumes Kestra executor has access to the dbt project files (e.g., via Git sync task)
-  # and dbt CLI + adapter installed.
-  - id: dbt_setup_and_run
-    type: io.kestra.core.tasks.flows.WorkingDirectory # Group dbt tasks in their project dir
-    tasks:
-      - id: git_clone_dbt_project # Example: Clone dbt repo if not already present
-        type: io.kestra.plugin.git.Clone
-        url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git # e.g., git@github.com:user/repo.git
-        branch: develop # Checkout the dev branch for the dev pipeline
-        # Add credentials if needed
+# -------------------------------------
+# 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
+# -------------------------------------
+# Assumes Kestra executor has access to the dbt project files (e.g., via Git sync task)
+# and dbt CLI + adapter installed.
+- id: dbt_setup_and_run
+  type: io.kestra.core.tasks.flows.WorkingDirectory # Group dbt tasks in their project dir
+  tasks:
+    - id: git_clone_dbt_project # Example: Clone dbt repo if not already present
+      type: io.kestra.plugin.git.Clone
+      url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git # e.g., git@github.com:user/repo.git
+      branch: develop # Checkout the dev branch for the dev pipeline
+      # Add credentials if needed
 
-      - id: dbt_deps
-        type: io.kestra.plugin.dbt.cli.DbtCLI
-        # runner: PROCESS # Or DOCKER if running dbt in its own container
-        commands:
-          - dbt deps
-        # Optional: Specify dbt project directory if not current dir
-        # projectDir: /path/to/dbt/project # Usually '.' if WorkingDirectory task is used
+    - id: dbt_deps
+      type: io.kestra.plugin.dbt.cli.DbtCLI
+      # runner: PROCESS # Or DOCKER if running dbt in its own container
+      commands:
+        - dbt deps
+      # Optional: Specify dbt project directory if not current dir
+      # projectDir: /path/to/dbt/project # Usually '.' if WorkingDirectory task is used
 
-      - id: dbt_seed
-        type: io.kestra.plugin.dbt.cli.DbtCLI
-        commands:
-          - dbt seed --target dev # Specify the dbt target
+    - id: dbt_seed
+      type: io.kestra.plugin.dbt.cli.DbtCLI
+      commands:
+        - dbt seed --target dev # Specify the dbt target
 
-      - id: dbt_run
-        type: io.kestra.plugin.dbt.cli.DbtCLI
-        commands:
-          - dbt run --target dev
+    - id: dbt_run
+      type: io.kestra.plugin.dbt.cli.DbtCLI
+      commands:
+        - dbt run --target dev
 
-      - id: dbt_test
-        type: io.kestra.plugin.dbt.cli.DbtCLI
-        commands:
-          - dbt test --target dev
+    - id: dbt_test
+      type: io.kestra.plugin.dbt.cli.DbtCLI
+      commands:
+        - dbt test --target dev
 
-    # Define the working directory relative to Kestra's internal storage or execution root
-    # This path needs to contain the dbt project after the git clone step
-    workingDirectory: "{{ outputs.git_clone_dbt_project.outputFiles.workingDir }}/dbt" # Example path for dbt_project.yml in subdir dbt/
+  # Define the working directory relative to Kestra's internal storage or execution root
+  # This path needs to contain the dbt project after the git clone step
+  workingDirectory: "{{ outputs.git_clone_dbt_project.outputFiles.workingDir }}/dbt" # Example path for dbt_project.yml in subdir dbt/
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
