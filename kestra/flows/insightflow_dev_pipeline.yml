@@ -95,6 +95,16 @@ tasks:
       - dbt seed --target dev
     namespaceFiles:
       enabled: false  # Disable automatic file sync for this task
+    profiles: |
+      default:
+        outputs:
+          dev:
+            type: athena
+            s3_staging_dir: "s3://insightflow-dev-processed-data/dbt-athena-results/"
+            region_name: "ap-southeast-2"
+            database: "your_database_name"
+            work_group: "primary"
+        target: dev
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
