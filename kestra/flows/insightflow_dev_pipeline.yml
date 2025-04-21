@@ -102,9 +102,10 @@ tasks:
             type: athena
             s3_staging_dir: "s3://insightflow-dev-processed-data/dbt-athena-results/"
             region_name: "ap-southeast-2"
-            database: "your_database_name"
+            schema: "insightflow_dev"  # <<< ADD THIS: Target Glue DB name created by Terraform
+            database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
             work_group: "primary"
-        target: dev
+        target: dev  # Tells dbt to use the 'dev' output block defined above
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
