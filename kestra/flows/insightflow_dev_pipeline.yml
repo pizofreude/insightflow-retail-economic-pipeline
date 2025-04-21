@@ -80,31 +80,31 @@ tasks:
   - id: debug_synced_files
     type: io.kestra.core.tasks.scripts.Bash
     commands:
-      - ls -l "{{ workingDir }}/dbt"
+      - ls -l dbt
 
   - id: dbt_deps
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt deps
-    projectDir: "{{ workingDir }}/dbt"
+    projectDir: "dbt"  # Use relative path within the WorkingDirectory
 
   - id: dbt_seed
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt seed --target dev
-    projectDir: "{{ workingDir }}/dbt"
+    projectDir: "dbt"  # Use relative path within the WorkingDirectory
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt run --target dev
-    projectDir: "{{ workingDir }}/dbt"
+    projectDir: "dbt"  # Use relative path within the WorkingDirectory
 
   - id: dbt_test
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt test --target dev
-    projectDir: "{{ workingDir }}/dbt"
+    projectDir: "dbt"  # Use relative path within the WorkingDirectory
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
