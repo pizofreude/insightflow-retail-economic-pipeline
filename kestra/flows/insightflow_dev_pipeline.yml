@@ -96,7 +96,8 @@ tasks:
     namespaceFiles:
       enabled: false  # Disable automatic file sync for this task
     profiles: |
-      default:
+      insightflow_dbt: # Profile name - must match profile in dbt_project.yml
+        target: dev  # Tells dbt to use the 'dev' output block defined below
         outputs:
           dev:
             type: athena
@@ -104,8 +105,9 @@ tasks:
             region_name: "ap-southeast-2"
             schema: "insightflow_dev"  # <<< ADD THIS: Target Glue DB name created by Terraform
             database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
+            threads: 4
             work_group: "primary"
-        target: dev  # Tells dbt to use the 'dev' output block defined above
+        
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
