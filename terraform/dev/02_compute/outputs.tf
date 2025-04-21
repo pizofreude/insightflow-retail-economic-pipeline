@@ -43,3 +43,8 @@ output "kestra_server_ssh_command" {
   value       = "ssh -i /path/to/${var.kestra_key_name}.pem ec2-user@${aws_eip.kestra_eip.public_ip}" # Use Elastic IP if created
   # value       = "ssh -i /path/to/${var.kestra_key_name}.pem ec2-user@${aws_instance.kestra_server.public_ip}" # Use instance public IP if no EIP
 }
+
+output "cloudwatch_log_group_name" {
+  description = "Name of the CloudWatch log group for AWS Batch jobs."
+  value       = aws_cloudwatch_log_group.batch_job_logs.name
+}
