@@ -268,7 +268,18 @@ resource "aws_batch_job_queue" "job_queue" {
   tags = local.common_tags
 }
 
-# AWS Batch Job Definition
+# --- NEW CloudWatch Log Group for Batch ---
+resource "aws_cloudwatch_log_group" "batch_job_logs" {
+  name              = "/aws/batch/job" # Ensure this matches the log group name in your AWS Batch job definition
+  retention_in_days = 7                # Optional: Set log retention period (e.g., 7 days)
+  tags = {
+    Project   = var.project_name
+    ManagedBy = "Terraform"
+  }
+}
+# --- End NEW CloudWatch Log Group for Batch ---
+
+# AWS Batch Job Definition# AWS Batch Job Definition
 resource "aws_batch_job_definition" "ingestion_job_def" {
   name = local.batch_job_definition_name
   type = "container"
@@ -287,7 +298,7 @@ resource "aws_batch_job_definition" "ingestion_job_def" {
     logConfiguration = { # Optional: Configure CloudWatch Logs driver
         logDriver = "awslogs"
         options = {
-           "awslogs-group"         = "/aws/batch/${local.batch_job_definition_name}" # Log group name
+           "awslogs-group"         = aws_cloudwatch_log_group.batch_job_logs.name # Reference the log group created above
            "awslogs-region"        = var.aws_region
            "awslogs-stream-prefix" = "batch"
         }
@@ -297,7 +308,6 @@ resource "aws_batch_job_definition" "ingestion_job_def" {
       { type = "VCPU",   value = tostring(var.batch_vcpu) },        # Value must be string
       { type = "MEMORY", value = tostring(var.batch_memory_mib) }   # Value must be string
     ]
-
   })
 
   # Optional: Retry strategy, timeout, tags
