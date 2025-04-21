@@ -68,52 +68,43 @@ tasks:
 - id: dbt_setup_and_run
   type: io.kestra.plugin.core.flow.WorkingDirectory
   tasks:
-  - id: git_clone_dbt_project
-    type: io.kestra.plugin.git.Clone
-    url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
+  - id: sync_dbt_files
+    type: io.kestra.plugin.git.SyncNamespaceFiles
+    url: https://github.com/pizofreude/insightflow-retail-economic-pipeline
     branch: develop
-    directory: "git_clone_dbt_project"  # Use a relative path here
+    namespace: "{{ flow.namespace }}"
+    gitDirectory: dbt
+    dryRun: false
+    # disabled: true # Uncomment this after the first successful sync if you don't want to sync files every time
 
-  - id: fix_permissions
+  - id: debug_synced_files
     type: io.kestra.core.tasks.scripts.Bash
     commands:
-      - chmod -R 755 git_clone_dbt_project
-
-  - id: debug_git_clone
-    type: io.kestra.core.tasks.scripts.Bash
-    commands:
-      - ls -l git_clone_dbt_project
-      - ls -l git_clone_dbt_project/dbt
-
-  - id: debug_working_directory
-    type: io.kestra.core.tasks.scripts.Bash
-    commands:
-      - pwd
-      - ls -l git_clone_dbt_project/dbt
+      - ls -l "{{ workingDir }}/dbt"
 
   - id: dbt_deps
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt deps
-    projectDir: "git_clone_dbt_project/dbt"  # Use a relative path here
+    projectDir: "{{ workingDir }}/dbt"
 
   - id: dbt_seed
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt seed --target dev
-    projectDir: "git_clone_dbt_project/dbt"  # Use a relative path here
+    projectDir: "{{ workingDir }}/dbt"
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt run --target dev
-    projectDir: "git_clone_dbt_project/dbt"  # Use a relative path here
+    projectDir: "{{ workingDir }}/dbt"
 
   - id: dbt_test
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
       - dbt test --target dev
-    projectDir: "git_clone_dbt_project/dbt"  # Use a relative path here
+    projectDir: "{{ workingDir }}/dbt"
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
