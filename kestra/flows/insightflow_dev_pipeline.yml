@@ -80,6 +80,12 @@ tasks:
       - ls -l git_clone_dbt_project
       - ls -l git_clone_dbt_project/dbt
 
+  - id: debug_working_directory
+    type: io.kestra.core.tasks.scripts.Bash
+    commands:
+      - pwd
+      - ls -l git_clone_dbt_project/dbt
+
   - id: dbt_deps
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
