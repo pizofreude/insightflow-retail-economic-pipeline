@@ -94,7 +94,7 @@ tasks:
     commands:
       - dbt seed --target dev
     namespaceFiles:
-      enabled: true
+      enabled: false  # Disable automatic file sync for this task
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
