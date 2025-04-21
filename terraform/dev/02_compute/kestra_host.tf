@@ -109,6 +109,7 @@ services:
       KESTRA_CONFIGURATION_STORAGE_S3_REGION: ${var.aws_region}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ec2-user/kestra/working-directory:/tmp/kestra-working-directory
 
 volumes:
   postgres_data:
@@ -117,15 +118,28 @@ EOT
 
               # Add Dockerfile to extend Kestra image
               cat <<'EOT' > /home/ec2-user/kestra/Dockerfile
+# Use the Kestra base image
 FROM kestra/kestra:latest-full
 
-# Install AWS CLI v2
+# Switch to root to install the Docker CLI and configure groups
+USER root
+
+# Install Docker CLI
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+
+# Remove existing 'docker' group (if it exists) and create a new one with the correct GID
+RUN groupdel docker || true && groupadd -g 992 docker && usermod -aG docker kestra
+
+# Switch back to the kestra user
+USER kestra
+
+# Install AWS CLI (if required)
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install && \
     rm -rf awscliv2.zip aws
 
-# Verify installation
+# Verify AWS CLI installation
 RUN aws --version
 EOT
 
