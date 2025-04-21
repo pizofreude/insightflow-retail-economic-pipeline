@@ -73,6 +73,9 @@ tasks:
     url: https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
     branch: develop
     directory: "git_clone_dbt_project"  # Use a relative path here
+
+  - id: fix_permissions
+    type: io.kestra.core.tasks.scripts.Bash
     commands:
       - chmod -R 755 git_clone_dbt_project
 
