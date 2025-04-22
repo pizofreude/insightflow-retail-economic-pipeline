@@ -3,9 +3,8 @@
 {{ config(
     materialized='table',
     partitioned_by=['year', 'month']
-    -- Optional: Add bucketing/clustering if desired for Athena performance tuning
-    -- clustered_by=['msic_group_key'],
-    -- buckets=16
+    clustered_by=['msic_group_key'],
+    buckets=16
     )
 }}
 
