@@ -88,7 +88,7 @@ tasks:
       - dbt deps
     namespaceFiles:
       enabled: true
-    containerImage: ghcr.io/dbt-athena-community/dbt-athena:latest
+    
 
   - id: dbt_seed
     type: io.kestra.plugin.dbt.cli.DbtCLI
@@ -108,7 +108,7 @@ tasks:
             database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
             threads: 4
             work_group: "primary"
-    containerImage: ghcr.io/dbt-athena-community/dbt-athena:latest
+    
         
 
   - id: dbt_run
@@ -117,7 +117,7 @@ tasks:
       - dbt run --target dev
     namespaceFiles:
       enabled: true
-    containerImage: ghcr.io/dbt-athena-community/dbt-athena:latest
+    
 
   - id: dbt_test
     type: io.kestra.plugin.dbt.cli.DbtCLI
@@ -125,19 +125,6 @@ tasks:
       - dbt test --target dev
     namespaceFiles:
       enabled: true
-    containerImage: ghcr.io/dbt-athena-community/dbt-athena:latest
-    # Optional: Add dbt test results to outputs
-    outputs:
-      - name: dbt_test_results
-        type: STRING
-        defaults: "{{ task.outputs }}"
-        description: "DBT test results"
-    # Optional: Add dbt test results to flow outputs
-    flowOutputs:
-      - name: dbt_test_results
-        type: STRING
-        defaults: "{{ task.outputs }}"
-        description: "DBT test results"
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
