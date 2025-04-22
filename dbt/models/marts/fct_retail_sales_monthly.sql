@@ -2,7 +2,7 @@
 
 {{ config(
     materialized='table',
-    partitioned_by=['year', 'month']
+    partitioned_by=['year', 'month'],
     clustered_by=['msic_group_key'],
     buckets=16
     )
