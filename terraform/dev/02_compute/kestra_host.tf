@@ -139,6 +139,9 @@ RUN pip install dbt-athena
 # Switch back to the kestra user
 USER kestra
 
+# Set the entrypoint to ensure the correct behavior
+ENTRYPOINT ["dbt"]
+
 # Install AWS CLI (if required)
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
