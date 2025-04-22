@@ -88,7 +88,7 @@ tasks:
       - dbt deps
     namespaceFiles:
       enabled: true
-    containerImage: kestra-kestra:latest
+    containerImage: pizofreude/kestra-dbt-athena:latest
     
 
   - id: dbt_seed
@@ -109,7 +109,7 @@ tasks:
             database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
             threads: 4
             work_group: "primary"
-    containerImage: kestra-kestra:latest        
+    containerImage: pizofreude/kestra-dbt-athena:latest   
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
@@ -117,7 +117,7 @@ tasks:
       - dbt run --target dev
     namespaceFiles:
       enabled: true
-    containerImage: kestra-kestra:latest
+    containerImage: pizofreude/kestra-dbt-athena:latest
     
 
   - id: dbt_test
@@ -126,7 +126,7 @@ tasks:
       - dbt test --target dev
     namespaceFiles:
       enabled: true
-    containerImage: kestra-kestra:latest
+    containerImage: pizofreude/kestra-dbt-athena:latest
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
