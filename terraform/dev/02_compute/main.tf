@@ -234,7 +234,16 @@ resource "aws_iam_policy" "kestra_athena_access_policy" {
           "athena:StartQueryExecution",
           "athena:GetQueryExecution",
           "athena:GetQueryResults",
-          "athena:ListQueryExecutions"
+          "athena:ListQueryExecutions",
+          "athena:GetWorkGroup",
+          "athena:GetWorkGroup",
+          "athena:ListWorkGroups",
+          "athena:CreateWorkGroup",
+          "athena:DeleteWorkGroup",
+          "athena:UpdateWorkGroup",
+          "athena:ListTagsForResource",
+          "athena:TagResource",
+          "athena:UntagResource"
         ],
         Resource = "*"
       },
