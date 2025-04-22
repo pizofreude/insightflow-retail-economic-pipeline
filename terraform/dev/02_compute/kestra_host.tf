@@ -118,8 +118,8 @@ EOT
 
               # Add Dockerfile to extend Kestra image
               cat <<'EOT' > /home/ec2-user/kestra/Dockerfile
-# Use the Kestra base image
-FROM kestra/kestra:latest-full
+# Use the base Kestra dbt image
+FROM ghcr.io/kestra-io/dbt:latest
 
 # Switch to root to install the Docker CLI and configure groups
 USER root
@@ -133,8 +133,11 @@ RUN groupdel docker || true && groupadd -g 992 docker && usermod -aG docker kest
 # # Install dbt-athena-community adapter
 # RUN pip install dbt-athena-community
 
+# # Install the official dbt-athena adapter
+# RUN pip install dbt-athena
+
 # Install the official dbt-athena adapter
-RUN pip install dbt-athena
+RUN pip install git+https://github.com/dbt-athena/dbt-athena.git
 
 # Switch back to the kestra user
 USER kestra
