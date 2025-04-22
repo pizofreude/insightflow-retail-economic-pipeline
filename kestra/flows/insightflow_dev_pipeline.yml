@@ -89,8 +89,6 @@ tasks:
     namespaceFiles:
       enabled: true
     containerImage: kestra-kestra:latest
-    dockerOptions:
-      network: host
     
 
   - id: dbt_seed
@@ -111,11 +109,7 @@ tasks:
             database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
             threads: 4
             work_group: "primary"
-    containerImage: kestra-kestra:latest
-    dockerOptions:
-      network: host
-    
-        
+    containerImage: kestra-kestra:latest        
 
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
@@ -124,8 +118,6 @@ tasks:
     namespaceFiles:
       enabled: true
     containerImage: kestra-kestra:latest
-    dockerOptions:
-      network: host
     
 
   - id: dbt_test
@@ -135,8 +127,6 @@ tasks:
     namespaceFiles:
       enabled: true
     containerImage: kestra-kestra:latest
-    dockerOptions:
-      network: host
 
 # Optional: Add triggers (e.g., schedule)
 triggers:
