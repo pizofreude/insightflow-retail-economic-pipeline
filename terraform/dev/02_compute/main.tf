@@ -222,6 +222,52 @@ resource "aws_iam_role_policy_attachment" "kestra_ec2_s3_access" {
 }
 
 # Add other permissions as needed (e.g., Secrets Manager read)
+resource "aws_iam_policy" "kestra_athena_access_policy" {
+  name        = "${local.resource_prefix}-kestra-athena-access-policy"
+  description = "Allows Kestra tasks to interact with Athena and the Athena results S3 bucket"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "athena:StartQueryExecution",
+          "athena:GetQueryExecution",
+          "athena:GetQueryResults",
+          "athena:ListQueryExecutions",
+          "athena:GetWorkGroup",
+          "athena:GetWorkGroup",
+          "athena:ListWorkGroups",
+          "athena:CreateWorkGroup",
+          "athena:DeleteWorkGroup",
+          "athena:UpdateWorkGroup",
+          "athena:ListTagsForResource",
+          "athena:TagResource",
+          "athena:UntagResource"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "arn:aws:s3:::insightflow-dev-processed-data",
+          "arn:aws:s3:::insightflow-dev-processed-data/*"
+        ]
+      }
+    ]
+  })
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "kestra_ec2_athena_access" {
+  role       = aws_iam_role.kestra_ec2_role.name
+  policy_arn = aws_iam_policy.kestra_athena_access_policy.arn
+}
 
 resource "aws_iam_instance_profile" "kestra_ec2_profile" {
   name = local.kestra_ec2_profile_name
