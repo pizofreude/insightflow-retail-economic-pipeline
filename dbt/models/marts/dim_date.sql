@@ -8,8 +8,8 @@
 with date_spine as (
     {{ dbt_utils.date_spine(
         datepart="day",
-        start_date="cast('2017-01-01' as date)", -- Adjust start date if needed based on data history
-        end_date="date_add('month', 1, current_date)" -- Go one month into the future to be safe
+        start_date="cast('2017-01-01' as date)",
+        end_date="date_add('month', 1, current_date)"
        )
     }}
 ),
