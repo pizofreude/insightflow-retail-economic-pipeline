@@ -9,6 +9,7 @@ with source_data as (
         desc_bm     -- this column name for Malay description
         -- Add other columns from the seed if needed
     from {{ ref('msic_lookup') }} -- Reference the seed file (msic_lookup.csv)
+    where group_code is not null and group_code != '' -- Filter out empty or null values
 )
 
 select
