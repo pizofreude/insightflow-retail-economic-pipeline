@@ -4,9 +4,9 @@ with source_data as (
     -- Select data from the seed file
     -- Ensure your msic_lookup.csv has headers: group_code, desc_en, desc_bm
     select
-        group_code, -- Assuming this column name in your CSV holds the 3-digit code
-        desc_en,    -- Assuming this column name for English description
-        desc_bm     -- Assuming this column name for Malay description
+        "group" as group_code, -- this column name in CSV holds the 3-digit code
+        desc_en,    -- this column name for English description
+        desc_bm     -- this column name for Malay description
         -- Add other columns from the seed if needed
     from {{ ref('msic_lookup') }} -- Reference the seed file (msic_lookup.csv)
 )
