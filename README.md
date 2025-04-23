@@ -156,6 +156,9 @@ Specifically, the pipeline will:
         
 4. [MSIC Lookup](https://open.dosm.gov.my/data-catalogue/msic)
     <details> <summary>Data Dictionary</summary>
+
+    >[!WARNING]
+    >The column name `group` in the `msic_lookup.csv` file conflicts with the reserved SQL keyword `GROUP` in Athena. When referenced in SQL without proper escaping, Athena interprets it as the keyword instead of a column name. Unfortunately, escaping using `“”` isn’t working either. The best solution is to change the column name `group` in `misc_lookup.csv` to `group_code`.
         
     ### **Dataset description**
     
