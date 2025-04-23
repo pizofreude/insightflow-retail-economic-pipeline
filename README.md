@@ -19,7 +19,7 @@ Businesses, economists, and policymakers often need to understand the interplay 
 However, manually accessing, downloading, cleaning, aligning (e.g., weekly fuel prices vs. monthly trade data), and integrating these datasets is a time-consuming, repetitive, and error-prone process. This manual approach hinders the ability to perform timely, consistent, and scalable analysis, making it difficult to quickly identify potential trends, seasonal patterns, or correlations that could inform strategic decisions. There is a need for an automated, reliable system to handle this data integration and preparation challenge.
 
 **Project Objective:**
-The primary objective of the InsightFlow project is to **design, implement, and orchestrate an end-to-end, automated batch data pipeline on AWS**. This pipeline will demonstrate modern data engineering practices including Infrastructure as Code (IaC), containerization, workflow orchestration, data modeling with dbt, and cloud-based data warehousing.
+The primary objective of the InsightFlow project is to **design, implement, and orchestrate an end-to-end, automated batch data pipeline on AWS**. This pipeline will demonstrate modern data engineering practices including Infrastructure as Code (IaC), containerization, workflow orchestration, data modeling with dbt, and cloud-based data warehousing & data lakes.
 
 Specifically, the pipeline will:
 
@@ -262,7 +262,7 @@ This modeling approach provides a clear, maintainable structure using dbt best p
     
     1. **Terraform Workspaces:** Isolate infrastructure between dev and prod.
     2. **Kestra Namespaces:** Separate workflows for dev and prod environments.
-    3. **Git Branching:** Use `dev` for dev and `main` for prod to manage Terraform code and dbt models.
+    3. **Git Branching:** Use `develop` for dev and `main` for prod to manage Terraform code and dbt models.
 - **Workflow orchestration**: Kestra
     
     **Description**: Kestra is a modern workflow orchestration platform that simplifies the management of complex workflows by enabling task coordination, dependency tracking, and monitoring for large-scale data pipelines.
