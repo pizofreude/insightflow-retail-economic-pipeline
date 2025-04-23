@@ -1,4 +1,4 @@
-digits,section,division,group,class,item,desc_en,exclude_en,include_en,desc_bm,exclude_bm,include_bm
+digits,section,division,group_code,class,item,desc_en,exclude_en,include_en,desc_bm,exclude_bm,include_bm
 1,A,-,-,-,-,"Agriculture, forestry and fishing",,,"Pertanian, Perhutanan dan Perikanan",,
 1,B,-,-,-,-,Mining and quarrying,,,Perlombongan dan Pengkuarian,,
 1,C,-,-,-,-,Manufacturing,,,Pembuatan,,
