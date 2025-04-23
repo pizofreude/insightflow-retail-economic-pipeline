@@ -16,7 +16,7 @@ with source_data as (
 
 select
     -- Cast data types and rename columns
-    date_from_unixtime(cast("date" as bigint)) as record_date,
+    cast(from_unixtime(cast("date" as bigint)) as date) as record_date,
     cast(ron95 as double) as ron95_price_rm,
     cast(ron97 as double) as ron97_price_rm,
     cast(diesel as double) as diesel_peninsular_price_rm,
