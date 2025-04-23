@@ -9,8 +9,8 @@ with source_data as (
         sales,
         volume
     from {{ source('landing_zone', 'iowrt_3d') }}
-    -- Filter for absolute values
-    where series = 'abs'
+    where series = 'abs' -- Filter for absolute values
+      and group_code is not null and group_code != '' -- Filter out empty or null values
 )
 
 select
