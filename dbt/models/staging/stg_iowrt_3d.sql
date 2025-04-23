@@ -5,7 +5,7 @@ with source_data as (
     select
         series,
         "date",
-        "group" as group_code, -- Rename 'group' column
+        group_code, -- Rename 'group' column
         sales,
         volume
     from {{ source('landing_zone', 'iowrt_3d') }}
