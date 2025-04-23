@@ -193,41 +193,101 @@ resource "aws_iam_role_policy_attachment" "glue_s3_read_policy_attach" {
 # --- End NEW Glue Crawler Role & Policy ---
 
 # --- NEW IAM Role & Instance Profile for Kestra EC2 ---
+# IAM Role for Kestra EC2 Instance
 resource "aws_iam_role" "kestra_ec2_role" {
   name = local.kestra_ec2_role_name
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
-      { Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" } }
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = { Service = "ec2.amazonaws.com" }
+      }
     ]
   })
   tags = local.common_tags
 }
 
-# Attach policies needed by Kestra tasks (AWS Plugins)
-# Granting broad access for portfolio simplicity - RESTRICT IN PRODUCTION
-resource "aws_iam_role_policy_attachment" "kestra_ec2_batch_access" {
-  role       = aws_iam_role.kestra_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSBatchFullAccess" # Allows submitting jobs, etc.
+# Instance Profile for Kestra EC2 Instance
+resource "aws_iam_instance_profile" "kestra_ec2_profile" {
+  name = local.kestra_ec2_profile_name
+  role = aws_iam_role.kestra_ec2_role.name
+  tags = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "kestra_ec2_glue_access" {
-  role       = aws_iam_role.kestra_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess" # Allows starting crawlers, etc.
-}
-
-resource "aws_iam_role_policy_attachment" "kestra_ec2_s3_access" {
-  role       = aws_iam_role.kestra_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess" # Needed if Kestra tasks interact directly with S3
-}
-
-# Add other permissions as needed (e.g., Secrets Manager read)
-resource "aws_iam_policy" "kestra_athena_access_policy" {
-  name        = "${local.resource_prefix}-kestra-athena-access-policy"
-  description = "Allows Kestra tasks to interact with Athena and the Athena results S3 bucket"
+# Consolidated IAM Policy for Kestra EC2 Instance
+resource "aws_iam_policy" "kestra_ec2_access_policy" {
+  name        = "${local.resource_prefix}-kestra-ec2-access-policy"
+  description = "Allows Kestra EC2 instance to interact with S3, DynamoDB, Fargate, Batch, ECR, Glue, Glue Crawler, Athena, and CloudWatch Logs"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
+      # S3 Access
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "s3:DeleteObject"
+        ],
+        Resource = [
+          "arn:aws:s3:::insightflow-dev-processed-data",
+          "arn:aws:s3:::insightflow-dev-processed-data/*",
+          "arn:aws:s3:::insightflow-dev-raw-data",
+          "arn:aws:s3:::insightflow-dev-raw-data/*"
+        ]
+      },
+      # DynamoDB Access
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:UpdateItem"
+        ],
+        Resource = "arn:aws:dynamodb:*:*:table/terraform-state-lock-dynamo"
+      },
+      # Fargate and Batch Access
+      {
+        Effect = "Allow",
+        Action = [
+          "ecs:RunTask",
+          "ecs:DescribeTasks",
+          "ecs:StopTask",
+          "ecs:ListTasks",
+          "batch:SubmitJob",
+          "batch:DescribeJobs",
+          "batch:TerminateJob"
+        ],
+        Resource = "*"
+      },
+      # ECR Access
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ],
+        Resource = "*"
+      },
+      # Glue and Glue Crawler Access
+      {
+        Effect = "Allow",
+        Action = [
+          "glue:GetTable",
+          "glue:GetDatabase",
+          "glue:StartCrawler",
+          "glue:GetCrawler"
+        ],
+        Resource = "*"
+      },
+      # Athena Access
       {
         Effect = "Allow",
         Action = [
@@ -247,32 +307,26 @@ resource "aws_iam_policy" "kestra_athena_access_policy" {
         ],
         Resource = "*"
       },
+      # CloudWatch Logs Access
       {
         Effect = "Allow",
         Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
         ],
-        Resource = [
-          "arn:aws:s3:::insightflow-dev-processed-data",
-          "arn:aws:s3:::insightflow-dev-processed-data/*"
-        ]
+        Resource = "arn:aws:logs:*:*:*"
       }
     ]
   })
   tags = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "kestra_ec2_athena_access" {
+# Attach the Consolidated Policy to the Kestra EC2 Role
+resource "aws_iam_role_policy_attachment" "kestra_ec2_access_policy_attach" {
   role       = aws_iam_role.kestra_ec2_role.name
-  policy_arn = aws_iam_policy.kestra_athena_access_policy.arn
-}
-
-resource "aws_iam_instance_profile" "kestra_ec2_profile" {
-  name = local.kestra_ec2_profile_name
-  role = aws_iam_role.kestra_ec2_role.name
-  tags = local.common_tags
+  policy_arn = aws_iam_policy.kestra_ec2_access_policy.arn
 }
 # --- End NEW Kestra EC2 IAM ---
 
