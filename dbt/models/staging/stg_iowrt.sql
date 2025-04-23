@@ -15,7 +15,7 @@ with source_data as (
 
 select
     -- Cast data types and rename columns
-    cast("date" as date) as record_date,
+    date_from_unixtime(cast("date" as bigint)) as record_date,
     cast(sales as double) as sales_value_rm_mil,
     cast(volume as double) as volume_index,
     cast(volume_sa as double) as volume_index_sa
