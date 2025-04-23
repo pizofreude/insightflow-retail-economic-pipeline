@@ -125,7 +125,7 @@ tasks:
     commands:
       - dbt test --target dev
     namespaceFiles:
-      enabled: true
+      enabled: false  # Disable automatic file sync for this task
     containerImage: pizofreude/kestra-dbt-athena:latest
 
 # Optional: Add triggers (e.g., schedule)
