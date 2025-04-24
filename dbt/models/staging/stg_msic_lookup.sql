@@ -22,5 +22,5 @@ select
 from source_data
 -- Filter for only 3-digit codes if your seed contains other levels
 -- Assuming 3-digit codes have length 3
-where length(trim(msic_group_code)) = 3
+where length(trim(group_code)) = 3
 
