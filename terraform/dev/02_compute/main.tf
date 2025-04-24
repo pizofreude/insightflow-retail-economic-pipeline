@@ -287,7 +287,7 @@ resource "aws_iam_policy" "kestra_ec2_access_policy" {
           "glue:StartCrawler",
           "glue:GetCrawler",
           "glue:StartCrawlers",   # Start multiple crawlers
-          "glue:GetCrawlers"      # Get details of multiple crawlers
+          "glue:GetCrawlers",      # Get details of multiple crawlers
           "glue:GetCrawlerMetrics",
           "glue:GetClassifiers",
           "glue:GetJobs",
