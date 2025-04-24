@@ -78,7 +78,7 @@ Specifically, the pipeline will:
         
     ### **Dataset description**
     
-    Performance of the wholesale & retail trade subsectors by MSIC group (3 digit), covering sales value and volume. The table provides a preview of the full dataset using the latest month of data only.
+    Performance of the wholesale & retail trade subsectors by MSIC group (3 digit), covering sales value and volume. The table provides a preview of the full dataset using the latest month of data only. The column name group is renamed to group_code in our ingestion script.
     
     ### **Variable definitions**
     
