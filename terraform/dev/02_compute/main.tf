@@ -281,10 +281,13 @@ resource "aws_iam_policy" "kestra_ec2_access_policy" {
         Effect = "Allow",
         Action = [
           "glue:GetTable",
+          "glue:GetTables",       # List tables in Glue
           "glue:GetDatabase",
-          "glue:GetDatabases", # Added permission for listing databases
+          "glue:GetDatabases",    # List databases in Glue
           "glue:StartCrawler",
-          "glue:GetCrawler"
+          "glue:GetCrawler",
+          "glue:StartCrawlers",   # Start multiple crawlers
+          "glue:GetCrawlers"      # Get details of multiple crawlers
         ],
         Resource = "*"
       },
