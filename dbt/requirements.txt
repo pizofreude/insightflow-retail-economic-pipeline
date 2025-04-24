@@ -2,7 +2,7 @@
 # Dependencies for running dbt locally with Athena
 
 dbt-core
-dbt-athena-adapter
+dbt-athena-community
 
 # Best practice is to pin versions, e.g.:
 # dbt-core~=1.7.0
