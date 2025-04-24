@@ -281,10 +281,50 @@ resource "aws_iam_policy" "kestra_ec2_access_policy" {
         Effect = "Allow",
         Action = [
           "glue:GetTable",
+          "glue:GetTables",       # List tables in Glue
           "glue:GetDatabase",
-          "glue:GetDatabases", # Added permission for listing databases
+          "glue:GetDatabases",    # List databases in Glue
           "glue:StartCrawler",
-          "glue:GetCrawler"
+          "glue:GetCrawler",
+          "glue:StartCrawlers",   # Start multiple crawlers
+          "glue:GetCrawlers",      # Get details of multiple crawlers
+          "glue:GetCrawlerMetrics",
+          "glue:GetClassifiers",
+          "glue:GetJobs",
+          "glue:StartJobRun",
+          "glue:GetJobRuns",
+          "glue:GetJobRun",
+          "glue:GetTriggers",
+          "glue:GetTrigger",
+          "glue:StartTrigger",
+          "glue:StopTrigger",
+          "glue:UpdateTrigger",
+          "glue:CreateTrigger",
+          "glue:DeleteTrigger",
+          "glue:UpdateJob",
+          "glue:CreateJob",
+          "glue:DeleteJob",
+          "glue:CreateCrawler",
+          "glue:DeleteCrawler",
+          "glue:UpdateCrawler",
+          "glue:DeleteTable",
+          "glue:UpdateTable",
+          "glue:UpdateTable",
+          "glue:CreateDatabase",
+          "glue:DeleteDatabase",
+          "glue:ListTriggers",
+          "glue:ListJobs",
+          "glue:ListCrawlers",
+          "glue:GetUserDefinedFunctions",
+          "glue:GetUserDefinedFunction",
+          "glue:UpdateUserDefinedFunction",
+          "glue:DeleteUserDefinedFunction",
+          "glue:CreateUserDefinedFunction",
+          "glue:GetSchema",
+          "glue:GetSchemas",
+          "glue:GetSchemaVersion",
+          "glue:GetSchemaVersionsDiff",
+          "glue:PutSchemaVersionDiff"
         ],
         Resource = "*"
       },
