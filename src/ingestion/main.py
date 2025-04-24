@@ -99,8 +99,18 @@ def upload_to_s3(data_bytes: bytes, bucket: str, s3_key: str) -> bool:
         logger.error(f"An unexpected error occurred during S3 upload to s3://{bucket}/{s3_key}: {e}")
         return False
 
+
 def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = 'date'):
     """Processes DataFrame rows and uploads them as individual Parquet files partitioned by date."""
+    # Handle column renaming for specific datasets
+    if dataset_name == "msic_lookup" or dataset_name == "iowrt_3d":
+        # Rename the 'group' column to 'group_code' to avoid Athena keyword conflicts
+        if "group" in df.columns:
+            df.rename(columns={"group": "group_code"}, inplace=True)
+            logger.info(f"Renamed 'group' column to 'group_code' for {dataset_name} dataset.")
+        else:
+            logger.warning(f"'group' column not found in {dataset_name} dataset. Skipping rename.")
+
     if df is None or df.empty:
         logger.warning(f"DataFrame for dataset '{dataset_name}' is empty or None. Skipping upload.")
         return
@@ -113,6 +123,8 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
     df = df.dropna(subset=[date_column])
 
     logger.info(f"Processing and uploading {len(df)} records for dataset '{dataset_name}'...")
+
+    # Logic for partitioning and uploading
 
     success_count = 0
     error_count = 0
