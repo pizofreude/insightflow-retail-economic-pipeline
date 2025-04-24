@@ -33,9 +33,10 @@ variable "tags" {
 variable "batch_container_image" {
   description = "ECR URI for the Docker container image for the Batch job."
   type        = string
-  default     = "public.ecr.aws/amazonlinux/amazonlinux:latest" # Placeholder - REPLACE LATER with your actual ECR image URI
+  default     = "864899839546.dkr.ecr.ap-southeast-2.amazonaws.com/insightflow-ingestion:latest"   # Placeholder - REPLACE LATER with your actual ECR image URI
   # default value is "public.ecr.aws/amazonlinux/amazonlinux:latest" as placeholder needed to be updated afterwards
-}
+} 
+  
 
 variable "batch_vcpu" {
   description = "Number of vCPUs for the Batch job container."
