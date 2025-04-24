@@ -387,32 +387,43 @@ resource "aws_batch_job_definition" "ingestion_job_def" {
   platform_capabilities = ["FARGATE"] # Required for Fargate compute environments
 
   container_properties = jsonencode({
-    image = var.batch_container_image # Use variable for image URI (REPLACE LATER)
+    image = "864899839546.dkr.ecr.ap-southeast-2.amazonaws.com/insightflow-ingestion:latest" # Updated Docker image
     command = ["python", "main.py"]
     jobRoleArn = aws_iam_role.batch_execution_role.arn # Role for the container application
     executionRoleArn = aws_iam_role.batch_execution_role.arn # Role for ECS agent to manage container (logging, ECR pull)
-    environment = [] # Pass TARGET_BUCKET during job submission overrides
+    environment = [
+      {
+        name  = "TARGET_BUCKET"
+        value = "insightflow-dev-raw-data"
+      },
+      {
+        name  = "AWS_REGION"
+        value = var.aws_region
+      }
+    ]
     networkConfiguration = {
       assignPublicIp = "ENABLED" # Enable if container needs outbound internet access (e.g., to download data)
     }
-    logConfiguration = { # Optional: Configure CloudWatch Logs driver
-        logDriver = "awslogs"
-        options = {
-           "awslogs-group"         = aws_cloudwatch_log_group.batch_job_logs.name # Reference the log group created above
-           "awslogs-region"        = var.aws_region
-           "awslogs-stream-prefix" = "batch"
-        }
+    logConfiguration = { # Configure CloudWatch Logs driver
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.batch_job_logs.name # Reference the log group created above
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "batch"
+      }
     }
-    # Define resource requirements for Fargate
     resourceRequirements = [
-      { type = "VCPU",   value = tostring(var.batch_vcpu) },        # Value must be string
-      { type = "MEMORY", value = tostring(var.batch_memory_mib) }   # Value must be string
+      { type = "VCPU",   value = "1" },        # 1 vCPU
+      { type = "MEMORY", value = "2048" }      # 2 GB memory
     ]
   })
 
-  # Optional: Retry strategy, timeout, tags
   retry_strategy {
     attempts = 1
+  }
+
+  timeout {
+    attempt_duration_seconds = 3600 # 1 hour
   }
 
   tags = local.common_tags
