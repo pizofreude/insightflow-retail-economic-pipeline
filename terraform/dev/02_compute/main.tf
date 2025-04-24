@@ -239,6 +239,21 @@ resource "aws_iam_policy" "kestra_ec2_access_policy" {
           "arn:aws:s3:::insightflow-dev-raw-data/*"
         ]
       },
+      # S3 Access for Athena Output Bucket
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ],
+        Resource = [
+          "arn:aws:s3:::insightflow-dev-processed-data",
+          "arn:aws:s3:::insightflow-dev-processed-data/*"
+        ]
+      },      
       # DynamoDB Access
       {
         Effect = "Allow",
