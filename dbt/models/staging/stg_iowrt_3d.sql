@@ -15,7 +15,7 @@ with source_data as (
 
 select
     -- Cast data types and rename columns
-    from_iso8601_date("date") as record_date,
+    cast("date" as timestamp) as record_date,
     cast(group_code as varchar) as msic_group_code, -- Ensure group code is string
     cast(sales as double) as sales_value_rm_mil,
     cast(volume as double) as volume_index
