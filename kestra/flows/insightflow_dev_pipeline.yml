@@ -20,7 +20,7 @@ tasks:
   commands:
     - |
       echo "Submitting AWS Batch Job..."
-      JOB_DEF_NAME="insightflow-dev-ingestion-job-def"
+      JOB_DEF_NAME="insightflow-dev-ingestion-job-def" # Ensure this matches the updated aws job definition name in main.tf:resource and locals
       JOB_QUEUE_NAME="insightflow-dev-job-queue"
       TARGET_BUCKET_NAME="insightflow-dev-raw-data"
       AWS_REGION="ap-southeast-2"
