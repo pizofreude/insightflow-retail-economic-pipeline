@@ -57,10 +57,20 @@ tasks:
 
   # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
 
-# # --- Optional Delay ---
-# - id: wait_for_crawler_and_batch
-#   type: io.kestra.plugin.core.flow.Pause
-#   delay: PT3M # Example: Pause for 3 minutes to give Batch/Crawler time
+# Add a delay or polling mechanism to wait for the crawler's completion, 
+# but note that 3 minutes (PT3M) is acceptable for this project's specific requirements.
+
+# ***Determining the Delay Time:***
+# 1. **Estimate the average crawl duration**: Go to **CloudWatch > Log groups > /aws-glue/crawlers > [crawler_name]** to review the logs and determine how long the crawler typically takes to complete its tasks.
+# 2. **Consider the maximum allowed delay**: Determine how long the pipeline can afford to wait for the crawler to complete before failing or timing out.
+# 3. **Calculate the safe delay time**: Use the estimated average crawl duration and maximum allowed delay to calculate a safe delay time that balances between waiting too long and failing too quickly.
+
+# --- Optional Delay ---
+- id: wait_for_crawler_and_batch
+  type: io.kestra.plugin.core.flow.Pause
+  delay: PT4M # Example: Pause for 4 minutes to give Batch/Crawler time
+
+# ***Always determine the delay time based on your project's unique needs and constraints.***
 
 # -------------------------------------
 # 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
