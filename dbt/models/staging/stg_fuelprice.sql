@@ -4,7 +4,7 @@ with source_data as (
     -- Select data from the raw source table created by Glue Crawler
     select
         series_type,
-        "date",
+        ymd_date, -- Updated column name
         ron95,
         ron97,
         diesel,
@@ -16,7 +16,7 @@ with source_data as (
 
 select
     -- Cast data types and rename columns
-    from_unixtime(cast("date" as bigint)) as record_date,
+    cast(ymd_date as date) as record_date,
     cast(ron95 as double) as ron95_price_rm,
     cast(ron97 as double) as ron97_price_rm,
     cast(diesel as double) as diesel_peninsular_price_rm,
