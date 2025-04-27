@@ -69,3 +69,11 @@ models:
         description: "Average monthly RON95 price."
         # Add tests if needed, e.g., check for reasonable price range
 
+      - name: stg_iowrt
+        description: "Date-validated in staging table for iowrt data."
+        columns:
+          - name: ymd_date
+            tests:
+              - not_null
+              - unique
+
