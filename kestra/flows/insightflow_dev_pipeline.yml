@@ -82,6 +82,8 @@ tasks:
       echo "Polling AWS Glue Crawler for completion..."
       CRAWLER_NAME="insightflow-dev-raw-data-crawler"
       AWS_REGION="ap-southeast-2"
+      MAX_RETRIES=10  # Maximum number of retries (e.g., 20 retries with 30-second intervals = 5 minutes)
+      RETRY_COUNT=0
 
       while true; do
         STATUS=$(aws glue get-crawler --region "$AWS_REGION" --name "$CRAWLER_NAME" --query 'Crawler.State' --output text)
@@ -96,6 +98,13 @@ tasks:
           echo "Crawler $CRAWLER_NAME is stopping. This might be a transient state. Waiting for 30 seconds..."
         else
           echo "Unexpected Crawler Status: $STATUS. Exiting with error."
+          exit 1
+        fi
+
+        # Increment retry count and check if maximum retries have been reached
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+          echo "Maximum retries reached. Crawler did not reach READY state. Exiting with error."
           exit 1
         fi
 
