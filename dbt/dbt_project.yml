@@ -59,6 +59,7 @@ seeds:
   insightflow: # Project name
     msic_lookup: # Specific seed file name (msic_lookup.csv)
       +schema: raw_seeds # Optional: Load seeds into a specific schema
+      +file_format: parquet # Save seed data in Parquet format
       +column_types: # Optional: Define column types explicitly if needed
           group_code: varchar
           desc_en: varchar
