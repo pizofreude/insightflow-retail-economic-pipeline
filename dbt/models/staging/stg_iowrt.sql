@@ -4,7 +4,7 @@ with source_data as (
     -- Select data from the raw source table created by Glue Crawler
     select
         series,
-        "date", -- Quoted because date is a reserved keyword in some SQL dialects
+        ymd_date, -- Updated column name
         sales,
         volume,
         volume_sa
@@ -15,7 +15,7 @@ with source_data as (
 
 select
     -- Cast data types and rename columns
-    from_unixtime(cast("date" as bigint)) as record_date,
+    cast(ymd_date as date) as record_date,
     cast(sales as double) as sales_value_rm_mil,
     cast(volume as double) as volume_index,
     cast(volume_sa as double) as volume_index_sa
