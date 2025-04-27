@@ -12,7 +12,7 @@ sources:
         columns:
           - name: series # Original column names from source Parquet/JSON
             description: "Series type ('abs', 'growth_yoy', 'growth_mom')"
-          - name: date
+          - name: ymd_date
             description: "Date of record (YYYY-MM-DD, monthly frequency)"
           - name: sales
             description: "Sales Value (RM mil)"
@@ -29,9 +29,9 @@ sources:
         columns:
           - name: series
             description: "Series type ('abs', 'growth_yoy', 'growth_mom')"
-          - name: date
+          - name: ymd_date
             description: "Date of record (YYYY-MM-DD, monthly frequency)"
-          - name: group # Note: This is the 3-digit MSIC code
+          - name: group_code # Note: This is the 3-digit MSIC code
             description: "MSIC Group Code (3-digit)"
           - name: sales
             description: "Sales Value (RM mil)"
@@ -43,7 +43,7 @@ sources:
         columns:
           - name: series_type
             description: "Chart Type ('level', 'change_weekly')"
-          - name: date
+          - name: ymd_date
             description: "Date of effect (YYYY-MM-DD, weekly frequency)"
           - name: ron95
             description: "RON95 Price (RM/litre)"
