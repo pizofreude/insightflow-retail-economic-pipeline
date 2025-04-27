@@ -42,7 +42,7 @@ tasks:
       echo '\{\{ outputs({"jobId": "'"$JOB_ID"'"}) \}\}'
 
 # -------------------------------------
-# 2. Update Glue Catalog via Crawler (using AWS CLI)
+# 2.1 Update Glue Catalog via Crawler (using AWS CLI)
 # -------------------------------------
 - id: start_glue_crawler_cli
   type: io.kestra.core.tasks.scripts.Bash
@@ -57,20 +57,47 @@ tasks:
 
   # Similar to Batch, this doesn't wait for completion. Add delay or polling if needed.
 
-# Add a delay or polling mechanism to wait for the crawler's completion, 
-# but note that 3 minutes (PT3M) is acceptable for this project's specific requirements.
+# Add a delay mechanism to wait for the crawler's completion, 
+# but note that 4 minutes (PT4M) is acceptable for this project's specific requirements.
 
 # ***Determining the Delay Time:***
 # 1. **Estimate the average crawl duration**: Go to **CloudWatch > Log groups > /aws-glue/crawlers > [crawler_name]** to review the logs and determine how long the crawler typically takes to complete its tasks.
 # 2. **Consider the maximum allowed delay**: Determine how long the pipeline can afford to wait for the crawler to complete before failing or timing out.
 # 3. **Calculate the safe delay time**: Use the estimated average crawl duration and maximum allowed delay to calculate a safe delay time that balances between waiting too long and failing too quickly.
 
-# --- Optional Delay ---
-- id: wait_for_crawler_and_batch
-  type: io.kestra.plugin.core.flow.Pause
-  delay: PT4M # Example: Pause for 4 minutes to give Batch/Crawler time
+# # --- Optional Delay ---
+# - id: wait_for_crawler_and_batch
+#   type: io.kestra.plugin.core.flow.Pause
+#   delay: PT4M # Example: Pause for 4 minutes to give Batch/Crawler time
 
-# ***Always determine the delay time based on your project's unique needs and constraints.***
+# # ***Always determine the delay time based on your project's unique needs and constraints.***
+
+# -------------------------------------
+# 2.2 Add a polling mechanism to wait for the crawler's completion
+# -------------------------------------
+- id: poll_glue_crawler
+  type: io.kestra.core.tasks.scripts.Bash
+  commands:
+    - |
+      echo "Polling AWS Glue Crawler for completion..."
+      CRAWLER_NAME="insightflow-dev-raw-data-crawler"
+      AWS_REGION="ap-southeast-2"
+
+      while true; do
+        STATUS=$(aws glue get-crawler --region "$AWS_REGION" --name "$CRAWLER_NAME" --query 'Crawler.State' --output text)
+        echo "Current Crawler Status: $STATUS"
+
+        if [ "$STATUS" = "READY" ]; then
+          echo "Crawler $CRAWLER_NAME has completed successfully."
+          break
+        elif [ "$STATUS" = "STOPPING" ]; then
+          echo "Crawler $CRAWLER_NAME is stopping. Exiting with error."
+          exit 1
+        fi
+
+        echo "Waiting for 30 seconds before checking again..."
+        sleep 30
+      done
 
 # -------------------------------------
 # 3. Run dbt Tasks (Requires dbt CLI plugin & access to dbt project files)
