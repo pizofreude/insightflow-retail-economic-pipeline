@@ -2,14 +2,16 @@
 
 {{ config(materialized='table') }}
 
-with deduplicated as (
+with ranked_descriptions as (
     select
-        msic_group_code, -- Use the renamed column from stg_msic_lookup
-        string_agg(desc_en, '; ' ORDER BY desc_en) as group_desc_en, -- Concatenate English descriptions
-        string_agg(desc_bm, '; ' ORDER BY desc_bm) as group_desc_bm  -- Concatenate Malay descriptions
+        msic_group_code,  -- Use the renamed column from stg_msic_lookup
+        desc_en,
+        desc_bm,
+        row_number() over (
+            partition by msic_group_code
+            order by length(desc_en) desc, length(desc_bm) desc
+        ) as rank
     from {{ ref('stg_msic_lookup') }}
-    -- Ensure uniqueness if the staging model didn't already
-    group by msic_group_code
 )
 
 select
@@ -17,6 +19,10 @@ select
     -- Using hash of the natural key (msic_group_code)
     {{ dbt_utils.generate_surrogate_key(['msic_group_code']) }} as msic_group_key,
     msic_group_code,
-    group_desc_en,
-    group_desc_bm
-from deduplicated
+    desc_en as group_desc_en,
+    desc_bm as group_desc_bm
+from ranked_descriptions
+where rank = 1
+
+
+
