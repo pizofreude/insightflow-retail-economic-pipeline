@@ -250,8 +250,8 @@ resource "aws_iam_policy" "kestra_ec2_access_policy" {
           "s3:DeleteObject"
         ],
         Resource = [
-          "arn:aws:s3:::insightflow-dev-processed-data",
-          "arn:aws:s3:::insightflow-dev-processed-data/*"
+          "arn:aws:s3:::insightflow-prod-processed-data",
+          "arn:aws:s3:::insightflow-prod-processed-data/*"
         ]
       },      
       # DynamoDB Access
