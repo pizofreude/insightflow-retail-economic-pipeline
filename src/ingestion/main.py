@@ -100,7 +100,7 @@ def upload_to_s3(data_bytes: bytes, bucket: str, s3_key: str) -> bool:
         return False
 
 
-def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = 'date'):
+def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = 'ymd_date'):
     """Processes DataFrame rows and uploads them as individual Parquet files partitioned by date."""
     # Handle column renaming for specific datasets
     if dataset_name == "iowrt":
@@ -145,9 +145,6 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
     df = df.dropna(subset=[date_column])
 
     logger.info(f"Processing and uploading {len(df)} records for dataset '{dataset_name}'...")
-
-    # Logic for partitioning and uploading
-    ...
 
     # Logic for partitioning and uploading
 
@@ -204,7 +201,6 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
 
     logger.info(f"Finished uploading for dataset '{dataset_name}'. Success: {success_count}, Errors: {error_count}")
 
-
 # --- Main Execution ---
 if __name__ == "__main__":
     logger.info("Starting ingestion script...")
@@ -213,13 +209,13 @@ if __name__ == "__main__":
         logger.error("TARGET_BUCKET environment variable not set. Exiting.")
         exit(1)
     else:
-         logger.info(f"Target S3 bucket: {TARGET_BUCKET}")
+        logger.info(f"Target S3 bucket: {TARGET_BUCKET}")
 
     # 1. Headline Wholesale & Retail Trade (iowrt) - API JSON -> Parquet
     logger.info("--- Processing Headline Trade (iowrt) ---")
     df_iowrt = fetch_api_data("iowrt")
     if df_iowrt is not None:
-        process_and_upload(df_iowrt, "iowrt", "date")
+        process_and_upload(df_iowrt, "iowrt", "ymd_date")  # Use 'ymd_date'
     else:
         logger.error("Failed to fetch or process Headline Trade data.")
 
@@ -227,8 +223,8 @@ if __name__ == "__main__":
     logger.info("--- Processing Detailed Trade (iowrt_3d) ---")
     df_iowrt_3d = download_parquet_data(DIRECT_PARQUET_URL_IOWRT_3D)
     if df_iowrt_3d is not None:
-         # Data is already Parquet, but we process for consistent partitioning/upload
-        process_and_upload(df_iowrt_3d, "iowrt_3d", "date")
+        # Data is already Parquet, but we process for consistent partitioning/upload
+        process_and_upload(df_iowrt_3d, "iowrt_3d", "ymd_date")  # Use 'ymd_date'
     else:
         logger.error("Failed to download or process Detailed Trade data.")
 
@@ -236,9 +232,8 @@ if __name__ == "__main__":
     logger.info("--- Processing Fuel Prices (fuelprice) ---")
     df_fuelprice = fetch_api_data("fuelprice")
     if df_fuelprice is not None:
-        process_and_upload(df_fuelprice, "fuelprice", "date")
+        process_and_upload(df_fuelprice, "fuelprice", "ymd_date")  # Use 'ymd_date'
     else:
         logger.error("Failed to fetch or process Fuel Price data.")
 
     logger.info("Ingestion script finished.")
-
