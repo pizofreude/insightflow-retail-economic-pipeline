@@ -1,23 +1,19 @@
 import os
 import logging
 import io
-from datetime import datetime
-
-import requests
 import pandas as pd
 import boto3
 from botocore.exceptions import ClientError
 
 # --- Configuration ---
-# URLs for the datasets
-# data.gov.my OpenAPI endpoints
-API_BASE_URL = "https://api.data.gov.my/data-catalogue"
-# Direct Parquet download URL
+# Direct Parquet download URLs
+DIRECT_PARQUET_URL_IOWRT = "https://storage.dosm.gov.my/iowrt/iowrt.parquet"
 DIRECT_PARQUET_URL_IOWRT_3D = "https://storage.dosm.gov.my/iowrt/iowrt_3d.parquet"
+DIRECT_PARQUET_URL_FUELPRICE = "https://storage.data.gov.my/commodities/fuelprice.parquet"
 
 # S3 Configuration - Bucket name is read from environment variable
-TARGET_BUCKET = os.environ.get("TARGET_BUCKET") # Set this in Batch Job Definition
-S3_RAW_PREFIX = "raw" # Base prefix for raw data
+TARGET_BUCKET = os.environ.get("TARGET_BUCKET")  # Set this in Batch Job Definition
+S3_RAW_PREFIX = "raw"  # Base prefix for raw data
 
 # Logging Configuration
 logging.basicConfig(
@@ -32,41 +28,12 @@ s3_client = boto3.client("s3")
 
 # --- Helper Functions ---
 
-def fetch_api_data(dataset_id: str) -> pd.DataFrame | None:
-    """Fetches data from the data.gov.my OpenAPI."""
-    url = f"{API_BASE_URL}?id={dataset_id}"
-    logger.info(f"Fetching data from API: {url}")
-    try:
-        response = requests.get(url, timeout=60) # Add timeout
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-        data = response.json()
-        if data:
-            df = pd.DataFrame(data)
-            logger.info(f"Successfully fetched {len(df)} records for dataset '{dataset_id}'.")
-            # Ensure date column is datetime type
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date'], errors='coerce')
-            return df
-        else:
-            logger.warning(f"No data returned from API for dataset '{dataset_id}'.")
-            return None
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching data from API for dataset '{dataset_id}': {e}")
-        return None
-    except Exception as e:
-        logger.error(f"An unexpected error occurred while fetching API data for '{dataset_id}': {e}")
-        return None
-
 def download_parquet_data(url: str) -> pd.DataFrame | None:
     """Downloads a Parquet file directly from a URL."""
     logger.info(f"Downloading Parquet data from: {url}")
     try:
-        # Use pandas to read directly (handles potential redirects and errors)
         df = pd.read_parquet(url)
         logger.info(f"Successfully downloaded {len(df)} records from {url}.")
-         # Ensure date column is datetime type
-        if 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'], errors='coerce')
         return df
     except Exception as e:
         logger.error(f"Error downloading Parquet data from {url}: {e}")
@@ -76,8 +43,12 @@ def df_to_parquet_bytes(df: pd.DataFrame) -> bytes | None:
     """Converts a Pandas DataFrame to Parquet format in memory."""
     logger.info("Converting DataFrame to Parquet format in memory.")
     try:
+        # Ensure 'ymd_date' is in datetime format
+        if 'ymd_date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['ymd_date']):
+            logger.error("'ymd_date' column is not in datetime format. Conversion failed.")
+            return None
+
         out_buffer = io.BytesIO()
-        # Use pyarrow engine (recommended), requires pyarrow installed
         df.to_parquet(out_buffer, index=False, engine='pyarrow', compression='snappy')
         logger.info("Conversion to Parquet bytes successful.")
         return out_buffer.getvalue()
@@ -104,23 +75,20 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
     """Processes DataFrame rows and uploads them as individual Parquet files partitioned by date."""
     # Handle column renaming for specific datasets
     if dataset_name == "iowrt":
-        # Rename 'date' to 'ymd_date'
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
-        if "ymd_date" in df.columns:
-            df["ymd_date"] = df["ymd_date"] // 1_000_000_000  # Convert nanoseconds to seconds
-            logger.info(f"Converted 'ymd_date' from nanoseconds to seconds for {dataset_name} dataset.")
         else:
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
+            return
 
     elif dataset_name == "iowrt_3d":
-        # Rename 'date' to 'ymd_date' and 'group' to 'group_code'
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
         else:
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
+            return
 
         if "group" in df.columns:
             df.rename(columns={"group": "group_code"}, inplace=True)
@@ -129,20 +97,26 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
             logger.warning(f"'group' column not found in {dataset_name} dataset. Skipping rename.")
 
     elif dataset_name == "fuelprice":
-        # Rename 'date' to 'ymd_date'
+        # Use the data source's logic to handle the 'date' column
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
-        if "ymd_date" in df.columns:
-            df["ymd_date"] = df["ymd_date"] // 1_000_000_000  # Convert nanoseconds to seconds
-            logger.info(f"Converted 'ymd_date' from nanoseconds to seconds for {dataset_name} dataset.")
         else:
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
+            return
+    
+        # Convert 'ymd_date' to datetime using the data source's approach
+        if "ymd_date" in df.columns:
+            logger.info(f"Sample 'ymd_date' values before conversion: {df['ymd_date'].head()}")
+            try:
+                df["ymd_date"] = pd.to_datetime(df["ymd_date"], errors='coerce')
+                logger.info(f"Sample 'ymd_date' values after conversion: {df['ymd_date'].head()}")
+                logger.info(f"Data type of 'ymd_date' column after conversion: {df['ymd_date'].dtype}")
+            except Exception as e:
+                logger.error(f"Error converting 'ymd_date' to datetime for {dataset_name}: {e}")
+                return
 
-    if df is None or df.empty:
-        logger.warning(f"DataFrame for dataset '{dataset_name}' is empty or None. Skipping upload.")
-        return
-
+    # Check if the date column exists after renaming
     if date_column not in df.columns:
         logger.error(f"Date column '{date_column}' not found in DataFrame for dataset '{dataset_name}'. Cannot partition.")
         return
@@ -152,24 +126,24 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
 
     logger.info(f"Processing and uploading {len(df)} records for dataset '{dataset_name}'...")
 
-    # Logic for partitioning and uploading
+    # Determine partition frequency based on dataset
+    if dataset_name == 'fuelprice':
+        partition_format = "%Y/%m/%d"  # Daily for fuel price
+        filename_date_format = "%Y-%m-%d"
+    else:  # Assume monthly for trade data
+        partition_format = "%Y/%m"  # Monthly for trade data
+        filename_date_format = "%Y-%m"
+
+    # Ensure the 'ymd_date' column is in datetime format
+    if not pd.api.types.is_datetime64_any_dtype(df[date_column]):
+        logger.error(f"Column '{date_column}' is not in datetime format for dataset '{dataset_name}'. Skipping upload.")
+        return
+
+    # Generate unique dates for partitioning
+    unique_dates = df[date_column].dt.to_period('M' if partition_format == "%Y/%m" else 'D').unique()
 
     success_count = 0
     error_count = 0
-
-    # Determine partition frequency based on dataset
-    if dataset_name == 'fuelprice':
-        partition_format = "%Y/%m/%d" # Daily for fuel price
-        filename_date_format = "%Y-%m-%d"
-    else: # Assume monthly for trade data
-        partition_format = "%Y/%m" # Monthly for trade data
-        filename_date_format = "%Y-%m"
-
-    # Group by partition key to potentially upload multiple records per file if dates are identical
-    # Or iterate row by row if daily/unique partitioning is desired
-    # For simplicity here, let's assume we upload one file per unique date partition found
-
-    unique_dates = df[date_column].dt.to_period('M' if partition_format == "%Y/%m" else 'D').unique()
 
     for period in unique_dates:
         year_str = f"{period.year:04d}"
@@ -180,7 +154,7 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
             partition_key = f"year={year_str}/month={month_str}/day={day_str}"
             file_date_str = period.strftime(filename_date_format)
             df_subset = df[df[date_column].dt.to_period('D') == period]
-        else: # Monthly
+        else:  # Monthly
             partition_key = f"year={year_str}/month={month_str}"
             file_date_str = period.strftime(filename_date_format)
             df_subset = df[df[date_column].dt.to_period('M') == period]
@@ -201,9 +175,8 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
             else:
                 error_count += len(df_subset)
         else:
-             error_count += len(df_subset)
-             logger.error(f"Skipping upload for partition {partition_key} due to Parquet conversion error.")
-
+            error_count += len(df_subset)
+            logger.error(f"Skipping upload for partition {partition_key} due to Parquet conversion error.")
 
     logger.info(f"Finished uploading for dataset '{dataset_name}'. Success: {success_count}, Errors: {error_count}")
 
@@ -217,29 +190,28 @@ if __name__ == "__main__":
     else:
         logger.info(f"Target S3 bucket: {TARGET_BUCKET}")
 
-    # 1. Headline Wholesale & Retail Trade (iowrt) - API JSON -> Parquet
+    # 1. Headline Wholesale & Retail Trade (iowrt)
     logger.info("--- Processing Headline Trade (iowrt) ---")
-    df_iowrt = fetch_api_data("iowrt")
+    df_iowrt = download_parquet_data(DIRECT_PARQUET_URL_IOWRT)
     if df_iowrt is not None:
-        process_and_upload(df_iowrt, "iowrt", "ymd_date")  # Use 'ymd_date'
+        process_and_upload(df_iowrt, "iowrt", "ymd_date")
     else:
-        logger.error("Failed to fetch or process Headline Trade data.")
+        logger.error("Failed to download or process Headline Trade data.")
 
-    # 2. Detailed Wholesale & Retail Trade (iowrt_3d) - Direct Parquet Download
+    # 2. Detailed Wholesale & Retail Trade (iowrt_3d)
     logger.info("--- Processing Detailed Trade (iowrt_3d) ---")
     df_iowrt_3d = download_parquet_data(DIRECT_PARQUET_URL_IOWRT_3D)
     if df_iowrt_3d is not None:
-        # Data is already Parquet, but we process for consistent partitioning/upload
-        process_and_upload(df_iowrt_3d, "iowrt_3d", "ymd_date")  # Use 'ymd_date'
+        process_and_upload(df_iowrt_3d, "iowrt_3d", "ymd_date")
     else:
         logger.error("Failed to download or process Detailed Trade data.")
 
-    # 3. Fuel Prices (fuelprice) - API JSON -> Parquet
+    # 3. Fuel Prices (fuelprice)
     logger.info("--- Processing Fuel Prices (fuelprice) ---")
-    df_fuelprice = fetch_api_data("fuelprice")
+    df_fuelprice = download_parquet_data(DIRECT_PARQUET_URL_FUELPRICE)
     if df_fuelprice is not None:
-        process_and_upload(df_fuelprice, "fuelprice", "ymd_date")  # Use 'ymd_date'
+        process_and_upload(df_fuelprice, "fuelprice", "ymd_date")
     else:
-        logger.error("Failed to fetch or process Fuel Price data.")
+        logger.error("Failed to download or process Fuel Price data.")
 
     logger.info("Ingestion script finished.")
