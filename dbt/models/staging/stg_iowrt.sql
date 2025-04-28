@@ -4,7 +4,7 @@ with source_data as (
     -- Select data from the raw source table created by Glue Crawler
     select
         series,
-        cast(from_unixtime(ymd_date) as date) as record_date, -- Convert Unix timestamp to date, Updated column name
+        cast(ymd_date as date) as record_date, -- Directly cast to date, Updated column name
         sales,
         volume,
         volume_sa
