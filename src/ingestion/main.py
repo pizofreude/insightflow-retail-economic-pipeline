@@ -43,6 +43,11 @@ def df_to_parquet_bytes(df: pd.DataFrame) -> bytes | None:
     """Converts a Pandas DataFrame to Parquet format in memory."""
     logger.info("Converting DataFrame to Parquet format in memory.")
     try:
+        # Ensure 'ymd_date' is in datetime format
+        if 'ymd_date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['ymd_date']):
+            logger.error("'ymd_date' column is not in datetime format. Conversion failed.")
+            return None
+
         out_buffer = io.BytesIO()
         df.to_parquet(out_buffer, index=False, engine='pyarrow', compression='snappy')
         logger.info("Conversion to Parquet bytes successful.")
@@ -92,6 +97,7 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
             logger.warning(f"'group' column not found in {dataset_name} dataset. Skipping rename.")
 
     elif dataset_name == "fuelprice":
+        # Use the data source's logic to handle the 'date' column
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
@@ -99,19 +105,15 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
             return
     
-        # Convert 'ymd_date' to datetime if it's in string format
+        # Convert 'ymd_date' to datetime using the data source's approach
         if "ymd_date" in df.columns:
             logger.info(f"Sample 'ymd_date' values before conversion: {df['ymd_date'].head()}")
-            if pd.api.types.is_integer_dtype(df["ymd_date"]):
-                # Convert nanoseconds to datetime
-                df["ymd_date"] = pd.to_datetime(df["ymd_date"] // 1_000_000_000, unit='s')
-                logger.info(f"Sample 'ymd_date' values after conversion: {df['ymd_date'].head()}")
-            elif pd.api.types.is_object_dtype(df["ymd_date"]):
-                # Convert string to datetime
+            try:
                 df["ymd_date"] = pd.to_datetime(df["ymd_date"], errors='coerce')
-                logger.info(f"Sample 'ymd_date' values after string-to-datetime conversion: {df['ymd_date'].head()}")
-            else:
-                logger.error(f"Unexpected data type for 'ymd_date' in {dataset_name}: {df['ymd_date'].dtype}")
+                logger.info(f"Sample 'ymd_date' values after conversion: {df['ymd_date'].head()}")
+                logger.info(f"Data type of 'ymd_date' column after conversion: {df['ymd_date'].dtype}")
+            except Exception as e:
+                logger.error(f"Error converting 'ymd_date' to datetime for {dataset_name}: {e}")
                 return
 
     # Check if the date column exists after renaming
@@ -132,6 +134,12 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
         partition_format = "%Y/%m"  # Monthly for trade data
         filename_date_format = "%Y-%m"
 
+    # Ensure the 'ymd_date' column is in datetime format
+    if not pd.api.types.is_datetime64_any_dtype(df[date_column]):
+        logger.error(f"Column '{date_column}' is not in datetime format for dataset '{dataset_name}'. Skipping upload.")
+        return
+
+    # Generate unique dates for partitioning
     unique_dates = df[date_column].dt.to_period('M' if partition_format == "%Y/%m" else 'D').unique()
 
     success_count = 0
