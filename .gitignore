@@ -223,7 +223,8 @@ Thumbs.db
 *.tmp
 
 # Sample data
-sample_data
+sample_data/
+archive/
 
 # dbt projects
 
