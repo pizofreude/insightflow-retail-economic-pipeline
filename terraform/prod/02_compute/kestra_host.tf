@@ -124,20 +124,20 @@ FROM ghcr.io/kestra-io/dbt:latest
 # Switch to root to install the Docker CLI and configure groups
 USER root
 
+# Create the 'kestra' user if it doesn't exist
+RUN useradd -m -s /bin/bash kestra || true
+
 # Install Docker CLI
 RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
 
 # Remove existing 'docker' group (if it exists) and create a new one with the correct GID
 RUN groupdel docker || true && groupadd -g 992 docker && usermod -aG docker kestra
 
-# # Install dbt-athena-community adapter
-# RUN pip install dbt-athena-community
+# Install dbt-core
+dbt-core==1.9.3
 
-# # Install the official dbt-athena adapter
-# RUN pip install dbt-athena
-
-# Install the official dbt-athena adapter
-RUN pip install git+https://github.com/dbt-athena/dbt-athena.git
+# Install dbt-athena-community adapter
+RUN pip install dbt-athena-community==1.9.3
 
 # Switch back to the kestra user
 USER kestra
