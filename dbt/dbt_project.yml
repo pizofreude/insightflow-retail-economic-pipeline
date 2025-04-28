@@ -32,7 +32,7 @@ clean-targets:
 models:
   insightflow: # Project name - applies config to models in this project
     # Config indicated by + and applies to all files under models/
-    +materialized: view # Default materialization for all models is 'view'
+    +materialized: table # # Default materialization for production
 
     staging: # Config specific to models/staging/ directory
       +materialized: view # Staging models will be views
@@ -65,3 +65,9 @@ seeds:
           desc_en: varchar
           desc_bm: varchar
           # Add other columns if present in your CSV and you want to type them
+
+fct_retail_sales_monthly:
+  +materialized: table
+  +partitions:
+    - year
+    - month
