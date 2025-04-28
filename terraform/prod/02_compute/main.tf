@@ -436,8 +436,13 @@ resource "aws_batch_job_queue" "job_queue" {
 
 # --- NEW CloudWatch Log Group for Batch ---
 resource "aws_cloudwatch_log_group" "batch_job_logs" {
-  name              = "/aws/batch/job" # Ensure this matches the log group name in your AWS Batch job definition
-  retention_in_days = 7                # Optional: Set log retention period (e.g., 7 days)
+  name              = "/aws/batch/job"
+  retention_in_days = 7
+
+  lifecycle {
+    ignore_changes = all
+  }
+
   tags = {
     Project   = var.project_name
     ManagedBy = "Terraform"
