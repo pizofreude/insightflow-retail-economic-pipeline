@@ -1,15 +1,15 @@
-id: insightflow_dev_pipeline # Unique ID for the flow
-namespace: dev.pipelines.insightflow # Namespace to organize flows
+id: insightflow_prod_pipeline # Unique ID for the flow
+namespace: prod.pipelines.insightflow # Namespace to organize flows
 
 description: |
   End-to-end pipeline for ingesting data.gov.my retail and fuel data,
-  processing it with dbt, and running tests. Targets the DEV environment.
+  processing it with dbt, and running tests. Targets the PRODUCTION environment.
 
 # Optional: Define inputs for the flow, e.g., target dbt environment
 inputs:
   - name: dbt_target
     type: STRING
-    defaults: dev
+    defaults: prod
 
 tasks:
 # -------------------------------------
@@ -20,9 +20,9 @@ tasks:
   commands:
     - |
       echo "Submitting AWS Batch Job..."
-      JOB_DEF_NAME="insightflow-dev-ingestion-job-def" # Ensure this matches the updated aws job definition name in main.tf:resource and locals
-      JOB_QUEUE_NAME="insightflow-dev-job-queue"
-      TARGET_BUCKET_NAME="insightflow-dev-raw-data"
+      JOB_DEF_NAME="insightflow-prod-ingestion-job-def"
+      JOB_QUEUE_NAME="insightflow-prod-job-queue"
+      TARGET_BUCKET_NAME="insightflow-prod-raw-data"
       AWS_REGION="ap-southeast-2"
 
       JOB_NAME="insightflow-ingestion-{{execution.id}}"
@@ -49,7 +49,7 @@ tasks:
   commands:
     - |
       echo "Starting AWS Glue Crawler..."
-      CRAWLER_NAME="insightflow-dev-raw-data-crawler"
+      CRAWLER_NAME="insightflow-prod-raw-data-crawler"
       AWS_REGION="ap-southeast-2"
 
       aws glue start-crawler --region $AWS_REGION --name "$CRAWLER_NAME"
@@ -80,7 +80,7 @@ tasks:
   commands:
     - |
       echo "Polling AWS Glue Crawler for completion..."
-      CRAWLER_NAME="insightflow-dev-raw-data-crawler"
+      CRAWLER_NAME="insightflow-prod-raw-data-crawler"
       AWS_REGION="ap-southeast-2"
       MAX_RETRIES=10  # Maximum number of retries (e.g., 20 retries with 30-second intervals = 5 minutes)
       RETRY_COUNT=0
@@ -143,18 +143,18 @@ tasks:
   - id: dbt_seed
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
-      - dbt seed --target dev
+      - dbt seed --target prod
     namespaceFiles:
       enabled: false  # Disable automatic file sync for this task
     profiles: |
       insightflow_dbt: # Profile name - must match profile in dbt_project.yml
-        target: dev  # Tells dbt to use the 'dev' output block defined below
+        target: prod  # Tells dbt to use the 'prod' output block defined below
         outputs:
-          dev:
+          prod:
             type: athena
-            s3_staging_dir: "s3://insightflow-dev-processed-data/dbt-athena-results/"
+            s3_staging_dir: "s3://insightflow-prod-processed-data/dbt-athena-results/"
             region_name: "ap-southeast-2"
-            schema: "insightflow_dev"  # <<< ADD THIS: Target Glue DB name created by Terraform
+            schema: "insightflow_prod"  # <<< ADD THIS: Target Glue DB name created by Terraform
             database: "awsdatacatalog" # <<< SET THIS: Use Glue Data Catalog alias
             threads: 4
             work_group: "primary"
@@ -163,7 +163,7 @@ tasks:
   - id: dbt_run
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
-      - dbt run --target dev
+      - dbt run --target prod
     namespaceFiles:
       enabled: false  # Disable automatic file sync for this task
     containerImage: pizofreude/kestra-dbt-athena:latest
@@ -172,7 +172,7 @@ tasks:
   - id: dbt_test
     type: io.kestra.plugin.dbt.cli.DbtCLI
     commands:
-      - dbt test --target dev
+      - dbt test --target prod
     namespaceFiles:
       enabled: false  # Disable automatic file sync for this task
     containerImage: pizofreude/kestra-dbt-athena:latest
