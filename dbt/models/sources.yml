@@ -4,7 +4,7 @@ version: 2
 sources:
   - name: landing_zone # Arbitrary name for the source group (e.g., raw S3 data)
     # database: insightflow_dev # Optional: Specify if different from target database in profiles.yml
-    schema: insightflow_dev # REQUIRED: Specify the Glue DB name where crawler creates tables
+    schema: insightflow_prod # REQUIRED: Specify the Glue DB name where crawler creates tables
     description: "Raw data loaded from data.gov.my sources via AWS Batch ingestion."
     tables:
       - name: iowrt # Corresponds to the table created by Glue Crawler for iowrt data
