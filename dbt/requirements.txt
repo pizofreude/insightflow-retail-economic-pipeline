@@ -1,8 +1,8 @@
 # dbt/requirements.txt
 # Dependencies for running dbt locally with Athena
 
-dbt-core
-dbt-athena-community
+dbt-core~=1.9.3
+dbt-athena-community~=1.9.3
 
 # Best practice is to pin versions, e.g.:
 # dbt-core~=1.7.0
