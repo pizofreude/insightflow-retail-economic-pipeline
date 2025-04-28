@@ -366,6 +366,46 @@ To set up and run the project, ensure you have the following tools and configura
 ---
 
 Each prerequisite ensures that you have the necessary tools and configurations to successfully deploy and run the project. Make sure to verify each step before proceeding.
+
+### Installation Steps
+
+1. **Clone the Repository**
+   
+   ```bash
+   git clone https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
+   cd insightflow-retail-economic-pipeline
+   ```
+2. **Set Up Terraform**
+   - Navigate to the `terraform` directory:
+     ```bash
+     cd terraform/prod/02_compute
+     ```
+   - Initialize Terraform:
+     ```bash
+     terraform init
+     ```
+   - Validate the configuration:
+     ```bash
+     terraform validate
+     ```
+   - Apply the infrastructure changes:
+     ```bash
+     terraform apply -var-file=prod.tfvars
+     ```
+
+3. **Set Up Kestra**
+   - Deploy the Kestra workflow by syncing the flows directory with your Kestra instance.
+
+4. **Run the Pipeline**
+   - Trigger the Kestra workflow to start the ingestion, transformation, and testing processes.
+
+---
+
+## Dashboard
+
+The dashboard provides insights into retail sales trends and their correlation with fuel prices. Below is a preview of the development dashboard:
+
+![InsightFlow Development Dashboard](images/InsightFlow%20Development%20Dashboard-1.png)
   
 ## Contributions and Feedback
 
