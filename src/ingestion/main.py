@@ -108,6 +108,9 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
+        if "ymd_date" in df.columns:
+            df["ymd_date"] = df["ymd_date"] // 1_000_000_000  # Convert nanoseconds to seconds
+            logger.info(f"Converted 'ymd_date' from nanoseconds to seconds for {dataset_name} dataset.")
         else:
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
 
@@ -130,6 +133,9 @@ def process_and_upload(df: pd.DataFrame, dataset_name: str, date_column: str = '
         if "date" in df.columns:
             df.rename(columns={"date": "ymd_date"}, inplace=True)
             logger.info(f"Renamed 'date' column to 'ymd_date' for {dataset_name} dataset.")
+        if "ymd_date" in df.columns:
+            df["ymd_date"] = df["ymd_date"] // 1_000_000_000  # Convert nanoseconds to seconds
+            logger.info(f"Converted 'ymd_date' from nanoseconds to seconds for {dataset_name} dataset.")
         else:
             logger.warning(f"'date' column not found in {dataset_name} dataset. Skipping rename.")
 
