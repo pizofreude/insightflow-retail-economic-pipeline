@@ -5,11 +5,11 @@
 with ranked_descriptions as (
     select
         msic_group_code,  -- Use the renamed column from stg_msic_lookup
-        desc_en,
-        desc_bm,
+        group_desc_en as desc_en, -- Use the alias from stg_msic_lookup
+        group_desc_bm as desc_bm, -- Use the alias from stg_msic_lookup
         row_number() over (
             partition by msic_group_code
-            order by length(desc_en) desc, length(desc_bm) desc
+            order by length(group_desc_en) desc, length(group_desc_bm) desc
         ) as rank
     from {{ ref('stg_msic_lookup') }}
 )
