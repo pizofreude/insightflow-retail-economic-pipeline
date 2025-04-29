@@ -17,8 +17,11 @@ Kestra is a modern workflow orchestration platform that simplifies the managemen
 
 Below is a high-level visualization of the Kestra workflow:
 
-![Kestra Workflow Orchestration](images/kestra-workflow-orchestration.png)
+<center>
 
+![Kestra Workflow Orchestration](../images/kestra-workflow-orchestration.png)
+
+</center>
 
 ## **Workflow Details**
 
@@ -120,7 +123,7 @@ triggers:
 
 The following Gantt chart illustrates the execution flow of the Kestra workflow, showing the sequence and dependencies of tasks:
 
-![Kestra Workflow Gantt Chart](images/kestra-workflow-orchestration-gantt.png)
+![Kestra Workflow Gantt Chart](../images/kestra-workflow-orchestration-gantt.png)
 
 ---
 
