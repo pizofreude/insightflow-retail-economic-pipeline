@@ -130,22 +130,16 @@ RUN useradd -m -s /bin/bash kestra || true
 # Install Docker CLI
 RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
 
+# Install curl
+RUN apt-get update && apt-get install -y curl
+
 # Remove existing 'docker' group (if it exists) and create a new one with the correct GID
 RUN groupdel docker || true && groupadd -g 992 docker && usermod -aG docker kestra
 
 # Install dbt-core and dbt-athena-community adapter
 RUN pip install dbt-core==1.9.3 dbt-athena-community==1.9.3
 
-# Switch back to the kestra user
-USER kestra
-
-# Set the entrypoint to ensure the correct behavior
-ENTRYPOINT ["dbt"]
-
-# Install curl
-RUN apt-get update && apt-get install -y curl
-
-# Install AWS CLI (if required)
+# Install AWS CLI
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install && \
@@ -153,6 +147,13 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 
 # Verify AWS CLI installation
 RUN aws --version
+
+# Switch back to the kestra user
+USER kestra
+
+# Set the entrypoint to ensure the correct behavior
+ENTRYPOINT ["dbt"]
+
 EOT
 
               # Set ownership for the Dockerfile
