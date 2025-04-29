@@ -142,6 +142,9 @@ USER kestra
 # Set the entrypoint to ensure the correct behavior
 ENTRYPOINT ["dbt"]
 
+# Install curl
+RUN apt-get update && apt-get install -y curl
+
 # Install AWS CLI (if required)
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
