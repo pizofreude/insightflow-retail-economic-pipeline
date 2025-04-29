@@ -1,9 +1,18 @@
-```markdown
 # Metabase Setup for InsightFlow
 
-This guide walks you through setting up Metabase locally using Docker and connecting it to your Amazon Athena data. Metabase is a powerful tool for exploring and visualizing data, and this setup will allow you to analyze your `InsightFlow` pipeline data.
+This guide walks you through setting up Metabase locally using Docker and connecting it to your Athena data. Metabase is a powerful tool for exploring and visualizing data, and this setup will allow you to analyze your `InsightFlow` pipeline data.
 
----
+## Development Dashboard (Metabase)
+
+Purpose: Used during the development phase for rapid validation of dbt transformations, data model correctness, and initial exploration of trends and correlations.
+
+Tool: Metabase (running locally via Docker).
+
+Connection: Connects directly to the AWS Athena data source, querying the insightflow_dev schema (Glue database).
+
+Key Features: Includes visualizations like monthly sales/fuel price trends, a combo chart comparing sales vs. fuel price, and breakdowns by retail group. Allows for quick, iterative checks as dbt models are developed.
+
+![InsightFlow Development Dashboard](../images/InsightFlow%20Development%20Dashboard-1.png)
 
 ## **Step 1: Run Metabase Locally Using Docker**
 
@@ -32,7 +41,6 @@ This guide walks you through setting up Metabase locally using Docker and connec
    http://localhost:3000
    ```
 
----
 
 ## **Step 2: Initial Metabase Setup**
 
@@ -40,7 +48,6 @@ This guide walks you through setting up Metabase locally using Docker and connec
 2. **Account Creation**: Create an admin account with your email, name, and password.
 3. **Add Your Data**: When prompted,  **select"Amazon Athena"** as the database type.
 
----
 
 ## **Step 3: Configure Athena Connection in Metabase**
 
@@ -62,7 +69,7 @@ This guide walks you through setting up Metabase locally using Docker and connec
 6. **Workgroup (Optional)**: Specify your Athena workgroup if not using the default `primary`.
 7. **Session Role ARN (Optional)**: Leave blank unless you need to assume a specific role.
 
----
+
 
 ## **Step 4: Save and Explore**
 
@@ -73,7 +80,7 @@ This guide walks you through setting up Metabase locally using Docker and connec
    - Navigate to the `insightflow_dev` schema to view tables created by dbt (e.g., `fct_retail_sales_monthly`, `dim_date`, etc.).
 3. **Ask Questions**: Use Metabase's query builder to explore and visualize your data.
 
----
+
 
 ## **Troubleshooting**
 
@@ -83,7 +90,3 @@ This guide walks you through setting up Metabase locally using Docker and connec
   ```
 - **Connection Issues**: Verify your AWS credentials, S3 staging directory, and Athena permissions.
 - **Data Not Visible**: Ensure your Glue Data Catalog is correctly configured and accessible.
-
----
-
-You are now ready to explore and visualize your `InsightFlow` pipeline data using Metabase. Start building dashboards and uncover insights!
