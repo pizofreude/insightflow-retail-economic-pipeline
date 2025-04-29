@@ -1,11 +1,24 @@
 # InsightFlow – Integrated Retail and Economic Batch Data Pipeline
 
-> **About:** A data engineering portfolio project using AWS cloud services to analyze correlations between Malaysian retail performance and fuel prices. Features Terraform IaC, ELT with AWS S3, Glue, SQL analytics via Athena coupled with data transformation via dbt, and workflow orchestration with Kestra.
+> **About:** A data engineering portfolio project using AWS cloud services to analyze correlations between Malaysian retail performance and fuel prices. Features Terraform IaC, ETL with AWS S3, Glue, SQL analytics via Athena coupled with data transformation via dbt, and workflow orchestration with Kestra.
 
-![Project Status](https://img.shields.io/badge/status-in--progress-yellow)
+![Project Status](https://img.shields.io/badge/status-complete-brightgreen)
 
 ## Project Status
-🚧 **Work in Progress**: This project is currently under development. Expect frequent changes and updates.
+✅ **Complete**: This project has been successfully developed and deployed. All planned features have been implemented, and the pipeline is fully operational.
+
+### Key Features
+- **Automated Data Ingestion**: Fetches retail and fuel price data from public sources using AWS Batch.
+- **Data Transformation**: Cleans, normalizes, and models data using dbt, creating an analysis-ready star schema.
+- **Workflow Orchestration**: Manages the end-to-end pipeline with Kestra, ensuring reliability and observability.
+- **Data Visualization**: Provides interactive dashboards in Metabase (dev) and AWS QuickSight (prod) for insights into retail trends and fuel price correlations.
+- **Infrastructure as Code**: Uses Terraform to provision and manage cloud resources for reproducibility and scalability.
+
+### Future Enhancements
+While the project is complete, potential future updates could include:
+- Real-time data processing with AWS Kinesis or Kafka.
+- Advanced analytics with machine learning models for predictive insights.
+- Multi-region deployment for enhanced scalability and redundancy.
 
 ## Overview
 
@@ -39,6 +52,11 @@ Specifically, the pipeline will:
     ### **Dataset description**
     
     Overall performance of the wholesale & retail trade subsectors, covering sales value and volume.
+    Renaming of column name due to SQL Reserved Keywords conflict:
+
+    - `date` → `ymd_date`
+
+    These column names are renamed using our ingestion script. 
     
     ### **Variable definitions**
     
@@ -78,7 +96,15 @@ Specifically, the pipeline will:
         
     ### **Dataset description**
     
-    Performance of the wholesale & retail trade subsectors by MSIC group (3 digit), covering sales value and volume. The table provides a preview of the full dataset using the latest month of data only. The column name group is renamed to group_code in our ingestion script.
+    Performance of the wholesale & retail trade subsectors by MSIC group (3 digit), covering sales value and volume. The table provides a preview of the full dataset using the latest month of data only.
+    Renaming of column name due to SQL Reserved Keywords conflict:
+
+    - `date` → `ymd_date`
+    - `group` → `group_code`
+
+    These column names are renamed using our ingestion script.
+
+    
     
     ### **Variable definitions**
     
@@ -118,7 +144,11 @@ Specifically, the pipeline will:
     
     ### **Dataset description**
     
-    Weekly retail prices of RON95 petrol, RON97 petrol, and diesel in Malaysia.
+    Weekly retail prices of RON95 petrol, RON97 petrol, and diesel in Malaysia. Renaming of column name due to SQL Reserved Keywords conflict:
+
+   - `date` → `ymd_date`
+
+    These column names are renamed using our ingestion script.
     
     ### **Variable definitions**
     
@@ -157,7 +187,7 @@ Specifically, the pipeline will:
 4. [MSIC Lookup](https://open.dosm.gov.my/data-catalogue/msic)
     <details> <summary>Data Dictionary</summary>
 
-    >[!WARNING]
+    >[!NOTE]
     >The column name `group` in the `msic_lookup.csv` file conflicts with the reserved SQL keyword `GROUP` in Athena. When referenced in SQL without proper escaping, Athena interprets it as the keyword instead of a column name. Unfortunately, escaping using `“”` isn’t working either. The best solution is to change the column name `group` in `misc_lookup.csv` to `group_code`.
         
     ### **Dataset description**
@@ -206,46 +236,29 @@ Specifically, the pipeline will:
 
 ## Data Modeling Approach (using dbt Cloud & Athena)
 
-The data modeling strategy focuses on transforming the raw source data into a well-structured analytical layer using dbt, suitable for querying with Athena and feeding BI dashboards. A star schema is chosen for its simplicity and effectiveness for analytical queries.
+The project utilizes dbt to transform raw data into an analytical star schema stored in the processed S3 bucket and queryable via Athena.
 
-1. **Sources:**
-    - Define dbt sources referencing the raw Parquet files landed by the ingestion process in the `raw` S3 bucket prefix. Initial Athena tables for these raw sources will be created/updated by an AWS Glue Crawler.
-    - Sources: `raw_iowrt` (Headline Trade), `raw_iowrt_3d` (Detailed Trade), `raw_fuelprice`.
-    - Include the **MSIC lookup data** (provided in `msic.txt`) as a **dbt seed file** (`msic_lookup.csv`) to decode the 3-digit group codes.
-2. **`Staging Models (models/staging/stg_*.sql):`** 
-    - One model per source/seed (e.g., `stg_iowrt`, `stg_iowrt_3d`, `stg_fuelprice`, `stg_msic_lookup`).
-    - **Purpose:** Perform initial cleaning, standardization, and preparation.
-    - **Transformations:**
-        - Select necessary columns.\
-        - Rename columns to a consistent snake_case convention (e.g., `sales_value_rm_mil`, `volume_index`, `ron95_price`, `ron97_price`, `diesel_price`, `group_code`, `group_desc_en`, `group_desc_bm`).
-        - Cast data types (dates, floats, strings).
-        - Filter records (e.g., keep only `series='abs'` for trade, `series_type='level'` for fuel prices).
-        - Basic null handling if necessary.
-        - For `stg_msic_lookup`, filter for the relevant 3-digit group codes and their descriptions.
-3. **`Intermediate Models (models/intermediate/int_*.sql):`** 
-    - **Purpose:** Handle more complex transformations and pre-aggregation needed before creating the final mart models.
-    - **`int_fuelprice_monthly`**: Aggregate the weekly `stg_fuelprice` data to a monthly level. This involves calculating the average price for RON95, RON97, and Diesel for each month. Create a `year_month` key (e.g., 'YYYY-MM') for joining.
-    - **`(Optional) int_trade_unioned:`** If headline (`stg_iowrt`) and detailed (`stg_iowrt_3d`) trade data need combining or consistent structuring before the fact table, this model can handle it. It might involve adding a placeholder `group_code` (e.g., 'Overall') to the headline data.
-4. **`Mart Models (models/marts/*.sql):`**
-    - **Purpose:** Create the final, analysis-ready tables in a star schema.
-    - **`dim_date`**: A dimension table built from distinct dates across the sources. Contains `date_key`, `full_date`, `year`, `month`, `year_month`, `quarter`, etc.
-    - **`dim_msic_group`**: Dimension table for retail trade groups.
-        - **Source:** Built from `stg_msic_lookup` (derived from the seed file).
-        - **Columns:** Contains `msic_group_key` (surrogate key), `group_code` (natural key, 3-digit), `group_desc_en` (English description), `group_desc_bm` (Malay description).
-    - **`fct_retail_sales_monthly`**: The primary fact table.
-        - **Grain:** One row per MSIC group (or 'Overall') per month.
-        - **Foreign Keys:** `date_key` (linking to `dim_date` on month start date), `msic_group_key` (linking to `dim_msic_group` on `group_code`).
-        - **Measures:** `sales_value_rm_mil`, `volume_index` (from `stg_iowrt_3d` or `int_trade_unioned`), `avg_ron95_price`, `avg_ron97_price`, `avg_diesel_price` (joined from `int_fuelprice_monthly` using `year_month`).
-        - **Materialization:** Configured as `table` in dbt to persist results in the `processed` S3 bucket prefix.
-5. **Data Warehouse Optimization (S3/Athena):**
-    - **Partitioning:** The `fct_retail_sales_monthly` table data in S3 will be **partitioned by year and month** (e.g., `s3://.../processed/fct_retail_sales_monthly/year=YYYY/month=MM/`).
-        - **Rationale:** This is crucial for Athena performance and cost-effectiveness. Analytical queries often filter by time periods (e.g., last 6 months, specific year). Partitioning allows Athena to scan only the relevant S3 prefixes (folders) containing the data for the specified partitions, drastically reducing the amount of data scanned, query runtime, and cost.
-    - **File Format:** Parquet is used throughout (raw and processed) for its columnar storage benefits, compression, and query performance with Athena.
-6. **Testing & Documentation (dbt):**
-    - Implement dbt tests (schema tests like `not_null`, `unique`, `accepted_values`, `relationships`, and potentially custom data tests) on key columns in staging and mart models to ensure data quality.
-    - Utilize dbt's documentation generation features to create a data catalog describing models, columns, and relationships.
+- **Staging Layer** (`insightflow_[dev|prod]_staging schema`): Basic cleaning, renaming, type casting of raw source data. Materialized as views.
+
+- **Intermediate Layer**: Contains models for necessary pre-computation (e.g., `int_fuelprice_monthly` for aggregating weekly fuel prices). Materialized as views.
+
+- **Mart Layer** (`insightflow_[dev|prod]_marts schema`): Final analysis-ready tables.
+
+- **dim_date**: Date dimension generated using dbt_utils.
+
+- **dim_msic_group**: Retail group dimension sourced from the MSIC seed file.
+
+- **fct_retail_sales_monthly**: Monthly fact table joining trade data with fuel prices and dimension keys. Materialized as a table, partitioned by year and month in S3 for efficient Athena querying.
 
 This modeling approach provides a clear, maintainable structure using dbt best practices and optimizes the data layout in S3 for efficient querying with Athena.
+
+The Entity Relational Diagram (ERD) for the final Data Warehouse is illustrated as follows:
+
+<center>
+
+![ERD](images/Entity-Relational-Diagram-(ERD)-InsightFlow.svg)
+
+</center>
 
 ## Tech Stacks and Architecture
 
@@ -253,6 +266,10 @@ This modeling approach provides a clear, maintainable structure using dbt best p
 - **Cloud**: AWS
     
     **Description**: AWS provides a secure, scalable, and flexible suite of cloud computing services, including storage, compute, databases, and machine learning, to host and manage applications efficiently.
+
+- **Container Registry**: AWS ECR
+
+    **Description**: AWS Elastic Container Registry (ECR) is a fully managed container registry that makes it easy to store, manage, and deploy Docker container images. It integrates seamlessly with AWS services, ensuring secure, scalable, and high-performance container image storage for modern application development.
     
 - **Infrastructure as code (IaC)**: Terraform
     
@@ -336,7 +353,19 @@ This modeling approach provides a clear, maintainable structure using dbt best p
     
     [InsightFlow Architecture](https://app.eraser.io/workspace/zabDT6mdR2frB0ztWeJa?origin=share&elements=5OliuARf9Ow-hzhf7iSKEQ)
 
-## Dashboard
+## InsightFlow Dashboard (Production)
+
+The dashboard provides insights into retail sales trends and their correlation with fuel prices.
+
+Purpose: Provides a polished, production-ready dashboard for end-users or stakeholders to consume key insights and monitor trends.
+
+Key Features: Presents curated KPIs (e.g., recent sales figures), core trend charts (sales, fuel prices), comparisons (sales vs. fuel), and potentially allows filtering by date range or retail group. Designed for clear communication of findings.
+
+Below is a preview of the production dashboard:
+
+![InsightFlow Production Dashboard](quicksight/InsightFlow-Production-Dashboard-QuickSight.svg)
+
+The dashboard is hosted on AWS QuickSight and can be accessed via the following URL: [InsightFlow Production Dashboard](https://ap-southeast-2.quicksight.aws.amazon.com/sn/accounts/864899839546/dashboards/0b02ec61-fa49-444f-8355-ec38a3849e28?directory_alias=pizofreude)
 
 ## Getting Started
 
@@ -375,37 +404,100 @@ Each prerequisite ensures that you have the necessary tools and configurations t
    git clone https://github.com/pizofreude/insightflow-retail-economic-pipeline.git
    cd insightflow-retail-economic-pipeline
    ```
-2. **Set Up Terraform**
-   - Navigate to the `terraform` directory:
-     ```bash
-     cd terraform/prod/02_compute
-     ```
-   - Initialize Terraform:
-     ```bash
-     terraform init
-     ```
-   - Validate the configuration:
-     ```bash
-     terraform validate
-     ```
-   - Apply the infrastructure changes:
-     ```bash
-     terraform apply -var-file=prod.tfvars
-     ```
 
-3. **Set Up Kestra**
-   - Deploy the Kestra workflow by syncing the flows directory with your Kestra instance.
+2. **AWS Backend Setup (Manual One-Off)**
+    
+    Before running Terraform, manually create the resources needed for the S3 remote state backend:
 
-4. **Run the Pipeline**
+    S3 Bucket: Create a globally unique S3 bucket in your target AWS region (e.g., ap-southeast-2) to store Terraform state files. Enable versioning. Keep it private. Example name: `insightflow-terraform-state-bucket-xyz`.
+
+    DynamoDB Table: Create a DynamoDB table in the same region for state locking. Use LockID (String) as the Partition Key. Example name: `terraform-state-lock-dynamo`.
+
+    Update Terraform Backend Config: Replace placeholder bucket/table names in the backend "s3" {} blocks within `terraform/dev/01_storage/main.tf` and `terraform/dev/02_compute/main.tf` (and eventually `prod/`) with your actual created names.
+
+3. **Local Setup**
+    
+    Clone Repository:
+
+    ```bash
+    git clone [https://github.com/pizofreude/insightflow-retail-economic-pipeline.git](https://github.com/pizofreude/insightflow-retail-economic-pipeline.git)
+    cd insightflow-retail-economic-pipeline
+    ```
+
+    Create & Activate Virtual Environment:
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate # Linux/macOS/Git Bash
+    # venv\Scripts\activate # Windows CMD/PowerShell
+    ```
+
+    Install Python Dependencies:
+
+    ```bash
+    pip install -r src/ingestion/requirements.txt # For ingestion script
+    pip install -r dbt/requirements.txt          # For local dbt CLI usage
+    ```
+
+    dbt Profile Setup: Configure your local dbt connection profile at `~/.dbt/profiles.yml`. Ensure it includes targets for dev (connecting to Athena `insightflow_dev` schema) and potentially `prod`. See [`dbt/profiles.yml.example`](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml) (you might want to create this example file) for the required structure. Do not commit your actual `profiles.yml` to Git.
+
+    EC2 Key Pair: Create an EC2 Key Pair (e.g., kestra-server-key) in your AWS region (ap-southeast-2). Download the `.pem` file and place it securely (e.g., in the `credentials/` directory - ensure this path is in `.gitignore`). Update permissions (`chmod 400 path/to/key.pem`).
+
+4.  **Cloud Infrastructure Setup (Terraform)**
+    
+    Deploy the infrastructure for the desired environment (`dev` or `prod`).
+
+    Deploy `dev` Environment:
+
+    Storage Layer:
+
+    ```bash
+    cd terraform/dev/01_storage
+    terraform init
+    terraform workspace select dev || terraform workspace new dev
+    terraform apply -var-file=dev.tfvars
+    ```
+
+    Compute Layer:
+    
+    Create terraform/dev/02_compute/dev.tfvars and set required variables (like `batch_container_image` - see next step, `kestra_key_name`, restricted CIDR blocks).
+
+    ```bash
+    cd ../02_compute
+    terraform init
+    terraform workspace select dev || terraform workspace new dev
+    terraform apply -var-file=dev.tfvars
+    ```
+
+    (Repeat similar steps for the prod environment using `terraform/prod/` directories and `prod.tfvars` files).
+
+5. **Setup AWS Batch Requirement for ECR**
+
+    To use AWS Batch for data ingestion, you need to build a Docker image from the `src/ingestion/Dockerfile` and push it to Amazon Elastic Container Registry (ECR). This image will be used by AWS Batch jobs to execute the ingestion process.
+
+    For detailed step-by-step instructions, refer to the [Ingestion README](src/ingestion/README.md).
+
+6. **Set Up Kestra**
+   - Terraform automatically deploys a self-hosted Kestra instance on EC2 using Docker Compose.
+   - Access the UI using the kestra_ui_url output from the 02_compute Terraform apply.
+   - Deploy the flow definition (kestra/flows/insightflow_dev_pipeline.yml or a production equivalent) via the Kestra UI ("Flows" -> "Create"). Ensure resource names and Git branch are correct for the target environment.
+
+7. **Run the Pipeline**
    - Trigger the Kestra workflow to start the ingestion, transformation, and testing processes.
-
----
-
-## Dashboard
-
-The dashboard provides insights into retail sales trends and their correlation with fuel prices. Below is a preview of the development dashboard:
-
-![InsightFlow Development Dashboard](images/InsightFlow%20Development%20Dashboard-1.png)
+   - Running the Pipeline
+   - Navigate to Kestra UI: Open the URL for your target environment (`dev` or `prod`).
+   - Go to Flows: Find the appropriate pipeline flow (e.g., `dev.pipelines.insightflow_dev_pipeline`).
+   - Execute Flow: Click the "Execute" button (▶️).
+   - Monitor: Go to the "Executions" tab and monitor the progress of the tasks:
+     - `submit_batch_ingestion_job_cli`: Submits the ingestion job to AWS Batch. Check CloudWatch Logs for the Batch job if issues occur.
+     - `start_glue_crawler_cli`: Starts the Glue Crawler. Check AWS Glue console for crawler status/logs.
+     - `wait_for_crawler_and_batch`: Pauses briefly.
+     - `git_clone_dbt_project`: Clones the dbt project from GitHub.
+     - `dbt_deps`: Installs dbt packages.
+     - `dbt_seed`: Loads seed data (MSIC lookup).
+     - `dbt_run`: Executes dbt models, creating tables/views in Athena (insightflow_dev or insightflow_prod schema).
+     - `dbt_test`: Runs data quality tests defined in dbt.
+   - Check Kestra task logs for any errors during execution.
   
 ## Contributions and Feedback
 
