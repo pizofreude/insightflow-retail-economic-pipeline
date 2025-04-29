@@ -120,7 +120,7 @@ tasks:
   - id: sync_dbt_files
     type: io.kestra.plugin.git.SyncNamespaceFiles
     url: https://github.com/pizofreude/insightflow-retail-economic-pipeline
-    branch: develop
+    branch: main
     namespace: "{{ flow.namespace }}"
     gitDirectory: dbt
     dryRun: false
