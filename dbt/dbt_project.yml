@@ -65,9 +65,3 @@ seeds:
           desc_en: varchar
           desc_bm: varchar
           # Add other columns if present in your CSV and you want to type them
-
-fct_retail_sales_monthly:
-  +materialized: table
-  +partitions:
-    - year
-    - month
