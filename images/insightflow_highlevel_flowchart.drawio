@@ -16,13 +16,13 @@
         <mxCell id="5" value="Transformation Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
           <mxGeometry x="372" y="1487" width="305" height="104" as="geometry" />
         </mxCell>
-        <mxCell id="6" value="Processing Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+        <mxCell id="6" value="                                                      Processing Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
           <mxGeometry x="372" y="998" width="294" height="208" as="geometry" />
         </mxCell>
-        <mxCell id="7" value="Ingestion Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+        <mxCell id="7" value="&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;Ingestion Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
           <mxGeometry x="353" y="820" width="632" height="128" as="geometry" />
         </mxCell>
-        <mxCell id="8" value="Infrastructure Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
+        <mxCell id="8" value="                                       &#xa;                                                               Infrastructure Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
           <mxGeometry x="659" y="515" width="330" height="232" as="geometry" />
         </mxCell>
         <mxCell id="9" value="Malaysian Retail Performance Data" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
