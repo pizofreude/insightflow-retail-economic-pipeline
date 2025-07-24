@@ -20,7 +20,7 @@
           <mxGeometry x="372" y="998" width="294" height="208" as="geometry" />
         </mxCell>
         <mxCell id="7" value="&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;Ingestion Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="353" y="820" width="632" height="128" as="geometry" />
+          <mxGeometry x="353" y="820" width="632" height="160" as="geometry" />
         </mxCell>
         <mxCell id="8" value="                                       &#xa;                                                               Infrastructure Layer" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
           <mxGeometry x="659" y="515" width="330" height="232" as="geometry" />
