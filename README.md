@@ -365,11 +365,9 @@ Below is a preview of the production dashboard:
 
 ![InsightFlow Production Dashboard](images/InsightFlow__Malaysian_Retail_Sales_&_Fuel_Price_Analysis.png)
 
-> :bulb: Note: Dashboard via AWS QuickSight is deprecated. Please use the Looker Studio dashboard instead.
+> :bulb: **Updated**: Dashboard migrated from AWS QuickSight to Looker Studio for better accessibility and cost efficiency.
 
-~~The dashboard is hosted on AWS QuickSight and can be accessed via the following URL: [InsightFlow Production Dashboard](https://ap-southeast-2.quicksight.aws.amazon.com/sn/accounts/864899839546/dashboards/0b02ec61-fa49-444f-8355-ec38a3849e28?directory_alias=pizofreude)~~
-
-Please find the live Looker Studio dashboard here: [InsightFlow Production Dashboard](https://lookerstudio.google.com/reporting/2e27dd2f-553f-4227-a32a-77c77dd038ed)
+**Live Dashboard**: [InsightFlow Production Dashboard](https://lookerstudio.google.com/reporting/2e27dd2f-553f-4227-a32a-77c77dd038ed)
 
 ## Getting Started
 
